@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "framer-motion": "^13.1.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.33.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "sonner": "^2.0.8"
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
