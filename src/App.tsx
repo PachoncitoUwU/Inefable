@@ -55,6 +55,28 @@ const staggerItem: Variants = {
 };
 
 
+const POINT_NAMES: Record<string, string> = {
+  '1': 'Vértice cintura costado',
+  '2': 'Vértice bota costado',
+  '3': 'Altura de cadera costado',
+  '4': 'Altura de rodilla costado',
+  '5': 'Cruce de entrepierna / tiro',
+  '6': 'Punta gancho de tiro anatómico',
+  '7': 'Centro línea de tiro / eje aplomo',
+  '8': 'Curvatura profundidad de tiro',
+  '9': 'Centro de rodilla',
+  '10': 'Ancho rodilla entrepierna',
+  '11': 'Ancho rodilla costado',
+  '12': 'Centro de bota / bajo',
+  '13': 'Ancho bota entrepierna',
+  '14': 'Ancho bota costado',
+  '15': 'Altura cadera centro frente',
+  '16': 'Vértice cintura centro frente / tiro',
+  '17': 'Caída y desvío de cintura / pinza',
+  '18': 'Centro cintura / eje de pinza',
+  '19': 'Curvatura de cadera costado'
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState<'pattern' | 'advisor' | 'color'>('pattern');
 
@@ -64,6 +86,9 @@ function App() {
   );
   const [showGuides, setShowGuides] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
+  const [showDimensions, setShowDimensions] = useState(true);
+  const [pieceView, setPieceView] = useState<'both' | 'front' | 'back'>('both');
+  const [hoveredPoint, setHoveredPoint] = useState<string | null>(null);
 
   const [userHeight, setUserHeight] = useState<number>(175);
   const [userWeight, setUserWeight] = useState<number>(70);
@@ -345,151 +370,295 @@ function App() {
                   </motion.button>
                 </motion.div>
 
-                {/* Canvas SVG del patrón */}
+                {/* Canvas SVG del patrón con herramientas de inspección */}
                 <motion.div layout className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                       <Layers size={18} color="var(--accent-gold)" />
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Trazado Técnico — 19 Puntos</h3>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Plano Técnico — 19 Puntos</h3>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+
+                    {/* Selector de pieza activa */}
+                    <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-medium)' }}>
+                      {(['both', 'front', 'back'] as const).map((pv) => (
+                        <button
+                          key={pv}
+                          onClick={() => setPieceView(pv)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            fontSize: '0.74rem',
+                            fontWeight: pieceView === pv ? 700 : 500,
+                            background: pieceView === pv ? 'var(--bg-card)' : 'transparent',
+                            color: pieceView === pv ? 'var(--text-primary)' : 'var(--text-muted)',
+                            boxShadow: pieceView === pv ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 150ms'
+                          }}
+                        >
+                          {pv === 'both' ? 'Ambos' : pv === 'front' ? 'Delantero' : 'Trasero'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Toggles de visualización */}
+                    <div style={{ display: 'flex', gap: '6px' }}>
                       <button
                         className="btn-secondary"
                         onClick={() => setShowGuides(!showGuides)}
-                        style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '4px' }}
+                        style={{ padding: '5px 10px', fontSize: '0.74rem' }}
                       >
-                        {showGuides ? 'Ocultar guías' : 'Mostrar guías'}
+                        {showGuides ? 'Guías ON' : 'Guías OFF'}
                       </button>
                       <button
                         className="btn-secondary"
                         onClick={() => setShowLabels(!showLabels)}
-                        style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '4px' }}
+                        style={{ padding: '5px 10px', fontSize: '0.74rem' }}
                       >
-                        {showLabels ? 'Sin números' : 'Numerar puntos'}
+                        {showLabels ? 'Números ON' : 'Números OFF'}
+                      </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => setShowDimensions(!showDimensions)}
+                        style={{ padding: '5px 10px', fontSize: '0.74rem' }}
+                      >
+                        {showDimensions ? 'Cotas ON' : 'Cotas OFF'}
                       </button>
                     </div>
                   </div>
 
+                  {/* Barra de información del punto hovereado */}
+                  <div style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', fontSize: '0.76rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '32px' }}>
+                    {hoveredPoint ? (
+                      <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>
+                        Punto {hoveredPoint}: {POINT_NAMES[hoveredPoint] || 'Punto anatómico'}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        Pasa el cursor sobre cualquier punto (1–19) para ver su función técnica anatómica.
+                      </span>
+                    )}
+                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                      Escala 1:10
+                    </span>
+                  </div>
+
                   {/* SVG del patrón con los 19 puntos */}
                   <motion.div
-                    key={selectedSilhouette}
+                    key={`${selectedSilhouette}-${pieceView}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, ease: EASE_OUT }}
+                    transition={{ duration: 0.35, ease: EASE_OUT }}
                     className="pattern-canvas"
-                    style={{ width: '100%', overflow: 'auto', border: '1px solid var(--border-subtle)' }}
+                    style={{ width: '100%', overflow: 'auto', border: '1px solid var(--border-subtle)', borderRadius: '12px' }}
                   >
                     <svg
-                      viewBox={`0 0 ${patternData.dimensions.width} ${patternData.dimensions.height}`}
+                      viewBox={
+                        pieceView === 'front'
+                          ? `20 0 ${patternData.gridBoxes.front.x + patternData.gridBoxes.front.width + 60} ${patternData.dimensions.height}`
+                          : pieceView === 'back'
+                          ? `${patternData.gridBoxes.back.x - 90} 0 ${patternData.gridBoxes.back.width + 160} ${patternData.dimensions.height}`
+                          : `0 0 ${patternData.dimensions.width} ${patternData.dimensions.height}`
+                      }
                       width="100%"
                       height="auto"
-                      style={{ display: 'block', minHeight: '380px' }}
+                      style={{ display: 'block', minHeight: '520px', maxHeight: '720px' }}
                       xmlns="http://www.w3.org/2000/svg"
                     >
-                      {/* Fondo de papel */}
-                      <rect width={patternData.dimensions.width} height={patternData.dimensions.height} fill="#FFFEF9" />
+                      {/* Fondo de papel milimetrado suave */}
+                      <rect width="2000" height="2000" fill="#FFFFFF" />
                       
-                      {/* Cuadrícula de papel de molde */}
+                      {/* Cuadrícula técnica suave */}
                       {showGuides && (
-                        <g opacity="0.18">
-                          {Array.from({ length: Math.ceil(patternData.dimensions.width / 50) }).map((_, i) => (
-                            <line key={`vg${i}`} x1={i * 50} y1="0" x2={i * 50} y2={patternData.dimensions.height} stroke="#C1440E" strokeWidth="0.3" />
+                        <g opacity="0.12">
+                          {Array.from({ length: 40 }).map((_, i) => (
+                            <line key={`vg${i}`} x1={i * 40} y1="0" x2={i * 40} y2={patternData.dimensions.height} stroke="#0ea5e9" strokeWidth="0.5" />
                           ))}
-                          {Array.from({ length: Math.ceil(patternData.dimensions.height / 50) }).map((_, i) => (
-                            <line key={`hg${i}`} x1="0" y1={i * 50} x2={patternData.dimensions.width} y2={i * 50} stroke="#C1440E" strokeWidth="0.3" />
+                          {Array.from({ length: 40 }).map((_, i) => (
+                            <line key={`hg${i}`} x1="0" y1={i * 40} x2={patternData.dimensions.width} y2={i * 40} stroke="#0ea5e9" strokeWidth="0.5" />
                           ))}
                         </g>
                       )}
 
-                      {/* DELANTERO — trazo principal */}
-                      <motion.path
-                        key={`front-${selectedSilhouette}`}
-                        d={patternData.frontSvgPath}
-                        fill="rgba(193, 68, 14, 0.06)"
-                        stroke="var(--bg-dark)"
-                        strokeWidth="1.8"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        initial={{ opacity: 0, pathLength: 0 }}
-                        animate={{ opacity: 1, pathLength: 1 }}
-                        transition={{ duration: 1.4, ease: EASE_OUT, delay: 0.1 }}
-                      />
-
-                      {/* TRASERO — trazo con color acento */}
-                      <motion.path
-                        key={`back-${selectedSilhouette}`}
-                        d={patternData.backSvgPath}
-                        fill="rgba(193, 68, 14, 0.03)"
-                        stroke="var(--accent-gold)"
-                        strokeWidth="1.8"
-                        strokeDasharray="6 3"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.6, delay: 0.5 }}
-                      />
-
-                      {/* Líneas de aplomo (hilo de tela) */}
+                      {/* LÍNEAS GUÍA TÉCNICAS EN CYAN / TURQUESA */}
                       {showGuides && (
+                        <g stroke="#0284c7" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.75">
+                          {(pieceView === 'both' || pieceView === 'front') && (
+                            <>
+                              <line x1={patternData.labelPoints.front[5].x - 10} y1={patternData.labelPoints.front[2].y} x2={patternData.labelPoints.front[0].x + 10} y2={patternData.labelPoints.front[2].y} />
+                              <line x1={patternData.labelPoints.front[9].x - 10} y1={patternData.labelPoints.front[3].y} x2={patternData.labelPoints.front[0].x + 10} y2={patternData.labelPoints.front[3].y} />
+                              <line x1={patternData.labelPoints.front[12].x - 10} y1={patternData.labelPoints.front[1].y} x2={patternData.labelPoints.front[0].x + 10} y2={patternData.labelPoints.front[1].y} />
+                              <line x1={patternData.labelPoints.front[0].x} y1={patternData.labelPoints.front[0].y} x2={patternData.labelPoints.front[1].x} y2={patternData.labelPoints.front[1].y} />
+                            </>
+                          )}
+
+                          {(pieceView === 'both' || pieceView === 'back') && (
+                            <>
+                              <line x1={patternData.labelPoints.back[5].x - 10} y1={patternData.labelPoints.back[2].y} x2={patternData.labelPoints.back[0].x + 10} y2={patternData.labelPoints.back[2].y} />
+                              <line x1={patternData.labelPoints.back[9].x - 10} y1={patternData.labelPoints.back[3].y} x2={patternData.labelPoints.back[0].x + 10} y2={patternData.labelPoints.back[3].y} />
+                              <line x1={patternData.labelPoints.back[12].x - 10} y1={patternData.labelPoints.back[1].y} x2={patternData.labelPoints.back[0].x + 10} y2={patternData.labelPoints.back[1].y} />
+                              <line x1={patternData.labelPoints.back[0].x} y1={patternData.labelPoints.back[0].y} x2={patternData.labelPoints.back[1].x} y2={patternData.labelPoints.back[1].y} />
+                            </>
+                          )}
+                        </g>
+                      )}
+
+                      {/* LÍNEAS DE APLOMO / HILO DE TELA */}
+                      {showGuides && (
+                        <g stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" opacity="0.85">
+                          {(pieceView === 'both' || pieceView === 'front') && (
+                            <line x1={patternData.grainLineFront.x1} y1={patternData.grainLineFront.y1} x2={patternData.grainLineFront.x2} y2={patternData.grainLineFront.y2} />
+                          )}
+                          {(pieceView === 'both' || pieceView === 'back') && (
+                            <line x1={patternData.grainLineBack.x1} y1={patternData.grainLineBack.y1} x2={patternData.grainLineBack.x2} y2={patternData.grainLineBack.y2} />
+                          )}
+                        </g>
+                      )}
+
+                      {/* DELANTERO */}
+                      {(pieceView === 'both' || pieceView === 'front') && (
                         <g>
-                          <line
-                            x1={patternData.grainLineFront.x1} y1={patternData.grainLineFront.y1}
-                            x2={patternData.grainLineFront.x2} y2={patternData.grainLineFront.y2}
-                            stroke="#1C1916" strokeWidth="0.8" strokeDasharray="4 2" opacity="0.5"
+                          <path d={patternData.frontDartPath} fill="none" stroke="var(--bg-dark)" strokeWidth="1.2" />
+                          <motion.path
+                            key={`front-${selectedSilhouette}`}
+                            d={patternData.frontSvgPath}
+                            fill="rgba(28, 25, 22, 0.02)"
+                            stroke="var(--bg-dark)"
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                            initial={{ opacity: 0, pathLength: 0 }}
+                            animate={{ opacity: 1, pathLength: 1 }}
+                            transition={{ duration: 1, ease: EASE_OUT }}
                           />
-                          <polygon
-                            points={`${patternData.grainLineFront.x1 - 4},${patternData.grainLineFront.y1 + 8} ${patternData.grainLineFront.x1 + 4},${patternData.grainLineFront.y1 + 8} ${patternData.grainLineFront.x1},${patternData.grainLineFront.y1}`}
-                            fill="#1C1916" opacity="0.5"
+
+                          {/* Cotas métricas en delantero */}
+                          {showDimensions && (
+                            <g fontSize="7.5" fill="#64748b" fontFamily="var(--font-mono)">
+                              <text x={patternData.grainLineFront.x1} y={patternData.labelPoints.front[2].y - 5} textAnchor="middle">
+                                Tiro: {measurements.crotchDepth}cm
+                              </text>
+                              <text x={patternData.grainLineFront.x1} y={patternData.labelPoints.front[3].y - 5} textAnchor="middle">
+                                Rodilla: {measurements.kneeWidth}cm
+                              </text>
+                              <text x={patternData.grainLineFront.x1} y={patternData.labelPoints.front[1].y - 5} textAnchor="middle">
+                                Bajo: {measurements.bottomWidth}cm
+                              </text>
+                            </g>
+                          )}
+
+                          {/* Puntos 1 a 19 Delantero */}
+                          {showLabels && patternData.labelPoints.front.map((pt) => {
+                            const isHovered = hoveredPoint === pt.label;
+                            return (
+                              <g 
+                                key={`fp-${pt.label}`} 
+                                style={{ cursor: 'pointer' }}
+                                onMouseEnter={() => setHoveredPoint(pt.label || null)}
+                                onMouseLeave={() => setHoveredPoint(null)}
+                              >
+                                <circle 
+                                  cx={pt.x} 
+                                  cy={pt.y} 
+                                  r={isHovered ? 5 : 3.2} 
+                                  fill={isHovered ? 'var(--accent-gold)' : 'var(--bg-dark)'} 
+                                  stroke="white" 
+                                  strokeWidth="1" 
+                                />
+                                <text
+                                  x={pt.x < patternData.grainLineFront.x1 ? pt.x - 7 : pt.x + 7}
+                                  y={pt.y + 3.5}
+                                  fontSize={isHovered ? "10" : "8.5"}
+                                  fill={isHovered ? 'var(--accent-gold)' : 'var(--bg-dark)'}
+                                  fontFamily="var(--font-mono)"
+                                  fontWeight="700"
+                                  textAnchor={pt.x < patternData.grainLineFront.x1 ? 'end' : 'start'}
+                                >
+                                  {pt.label}
+                                </text>
+                              </g>
+                            );
+                          })}
+
+                          <text x={patternData.grainLineFront.x1} y="24" fontSize="12" fill="var(--bg-dark)" fontFamily="var(--font-sans)" fontWeight="700" textAnchor="middle" letterSpacing="0.1em">
+                            DELANTERO
+                          </text>
+                        </g>
+                      )}
+
+                      {/* TRASERO */}
+                      {(pieceView === 'both' || pieceView === 'back') && (
+                        <g>
+                          <path d={patternData.backDartPath} fill="none" stroke="var(--accent-gold)" strokeWidth="1.2" />
+                          <motion.path
+                            key={`back-${selectedSilhouette}`}
+                            d={patternData.backSvgPath}
+                            fill="rgba(193, 68, 14, 0.03)"
+                            stroke="var(--accent-gold)"
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                            initial={{ opacity: 0, pathLength: 0 }}
+                            animate={{ opacity: 1, pathLength: 1 }}
+                            transition={{ duration: 1, ease: EASE_OUT, delay: 0.15 }}
                           />
-                          <line
-                            x1={patternData.grainLineBack.x1} y1={patternData.grainLineBack.y1}
-                            x2={patternData.grainLineBack.x2} y2={patternData.grainLineBack.y2}
-                            stroke="var(--accent-gold)" strokeWidth="0.8" strokeDasharray="4 2" opacity="0.5"
-                          />
+
+                          {/* Cotas métricas en trasero */}
+                          {showDimensions && (
+                            <g fontSize="7.5" fill="#c1440e" fontFamily="var(--font-mono)" opacity="0.85">
+                              <text x={patternData.grainLineBack.x1} y={patternData.labelPoints.back[2].y - 5} textAnchor="middle">
+                                Gancho trasero extendido
+                              </text>
+                            </g>
+                          )}
+
+                          {/* Puntos 1 a 19 Trasero */}
+                          {showLabels && patternData.labelPoints.back.map((pt) => {
+                            const isHovered = hoveredPoint === pt.label;
+                            return (
+                              <g 
+                                key={`bp-${pt.label}`} 
+                                style={{ cursor: 'pointer' }}
+                                onMouseEnter={() => setHoveredPoint(pt.label || null)}
+                                onMouseLeave={() => setHoveredPoint(null)}
+                              >
+                                <circle 
+                                  cx={pt.x} 
+                                  cy={pt.y} 
+                                  r={isHovered ? 5 : 3.2} 
+                                  fill={isHovered ? 'var(--bg-dark)' : 'var(--accent-gold)'} 
+                                  stroke="white" 
+                                  strokeWidth="1" 
+                                />
+                                <text
+                                  x={pt.x < patternData.grainLineBack.x1 ? pt.x - 7 : pt.x + 7}
+                                  y={pt.y + 3.5}
+                                  fontSize={isHovered ? "10" : "8.5"}
+                                  fill={isHovered ? 'var(--bg-dark)' : 'var(--accent-gold)'}
+                                  fontFamily="var(--font-mono)"
+                                  fontWeight="700"
+                                  textAnchor={pt.x < patternData.grainLineBack.x1 ? 'end' : 'start'}
+                                >
+                                  {pt.label}
+                                </text>
+                              </g>
+                            );
+                          })}
+
+                          <text x={patternData.grainLineBack.x1} y="24" fontSize="12" fill="var(--accent-gold)" fontFamily="var(--font-sans)" fontWeight="700" textAnchor="middle" letterSpacing="0.1em">
+                            TRASERO
+                          </text>
                         </g>
                       )}
 
                       {/* Piquetes de ensamble */}
                       {showGuides && patternData.notches.map((n, i) => (
-                        <rect key={`notch-${i}`} x={n.x - 1} y={n.y - 4} width="2" height="8" fill="#1C1916" opacity="0.6" />
-                      ))}
-
-                      {/* Puntos numerados del DELANTERO */}
-                      {showLabels && patternData.labelPoints.front.map((pt) => (
-                        <g key={`fp-${pt.label}`}>
-                          <circle cx={pt.x} cy={pt.y} r="3.5" fill="var(--bg-dark)" stroke="white" strokeWidth="1" />
-                          <text
-                            x={pt.x + 5} y={pt.y - 4}
-                            fontSize="7" fill="var(--bg-dark)" fontFamily="var(--font-mono)"
-                            fontWeight="600"
-                          >
-                            {pt.label}
-                          </text>
+                        <g key={`notch-${i}`}>
+                          <circle cx={n.x} cy={n.y} r="2.5" fill="var(--accent-gold)" />
+                          <line x1={n.x - 3} y1={n.y} x2={n.x + 3} y2={n.y} stroke="white" strokeWidth="0.8" />
                         </g>
                       ))}
-
-                      {/* Puntos numerados del TRASERO */}
-                      {showLabels && patternData.labelPoints.back.map((pt) => (
-                        <g key={`bp-${pt.label}`}>
-                          <circle cx={pt.x} cy={pt.y} r="3.5" fill="var(--accent-gold)" stroke="white" strokeWidth="1" />
-                          <text
-                            x={pt.x + 5} y={pt.y - 4}
-                            fontSize="7" fill="var(--accent-gold)" fontFamily="var(--font-mono)"
-                            fontWeight="600"
-                          >
-                            {pt.label}
-                          </text>
-                        </g>
-                      ))}
-
-                      {/* Etiquetas de pieza */}
-                      <text x="60" y="40" fontSize="10" fill="var(--bg-dark)" fontFamily="var(--font-mono)" fontWeight="700" opacity="0.6">
-                        DELANTERO
-                      </text>
-                      <text x={patternData.grainLineBack.x1 - 30} y="40" fontSize="10" fill="var(--accent-gold)" fontFamily="var(--font-mono)" fontWeight="700" opacity="0.7">
-                        TRASERO
-                      </text>
                     </svg>
                   </motion.div>
 

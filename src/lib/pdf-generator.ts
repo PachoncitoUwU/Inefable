@@ -224,8 +224,28 @@ export function exportPatternToPdf(measurements: PatternMeasurements, silhouette
     const tx = (x: number) => x * scale + offsetX;
     const ty = (y: number) => y * scale + offsetY;
 
+    // DIBUJAR LÍNEAS GUÍA TÉCNICAS (CYAN / TURQUESA)
+    doc.setDrawColor(2, 132, 199);
+    doc.setLineWidth(0.25);
+    // Guías punteadas (tiro, rodilla, bajo)
+    const pDict: Record<string, PatternPoint> = {};
+    pts.forEach(p => { if (p.label) pDict[p.label] = p; });
+
+    if (pDict['6'] && pDict['3']) {
+      doc.line(tx(pDict['6'].x) - 4, ty(pDict['3'].y), tx(pDict['3'].x) + 4, ty(pDict['3'].y));
+    }
+    if (pDict['10'] && pDict['4']) {
+      doc.line(tx(pDict['10'].x) - 4, ty(pDict['4'].y), tx(pDict['4'].x) + 4, ty(pDict['4'].y));
+    }
+    if (pDict['13'] && pDict['2']) {
+      doc.line(tx(pDict['13'].x) - 4, ty(pDict['2'].y), tx(pDict['2'].x) + 4, ty(pDict['2'].y));
+    }
+    if (pDict['1'] && pDict['2']) {
+      doc.line(tx(pDict['1'].x), ty(pDict['1'].y), tx(pDict['2'].x), ty(pDict['2'].y));
+    }
+
     // DIBUJAR LÍNEA DE APLOMO / HILO DE TELA
-    doc.setDrawColor(193, 68, 14);
+    doc.setDrawColor(2, 132, 199);
     doc.setLineWidth(0.4);
     const gx1 = tx(grainLine.x1);
     const gy1 = ty(grainLine.y1);
@@ -234,24 +254,40 @@ export function exportPatternToPdf(measurements: PatternMeasurements, silhouette
     doc.line(gx1, gy1, gx2, gy2);
 
     // Flechas de aplomo
-    doc.setFillColor(193, 68, 14);
+    doc.setFillColor(2, 132, 199);
     doc.triangle(gx1, gy1 - 3, gx1 - 2, gy1, gx1 + 2, gy1, 'F');
     doc.triangle(gx2, gy2 + 3, gx2 - 2, gy2, gx2 + 2, gy2, 'F');
 
-    doc.setTextColor(193, 68, 14);
+    doc.setTextColor(2, 132, 199);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.text('▲  H I L O   D E   T E L A   ( A P L O M O )  ▲', gx1 + 3, (gy1 + gy2) / 2, { angle: 90 });
 
-    // DIBUJAR CONTORNO DEL PATRÓN
+    // DIBUJAR CONTORNO DEL PATRÓN EN ORDEN PERIMETRAL EXACTO
     doc.setDrawColor(28, 25, 22);
-    doc.setLineWidth(0.8);
+    doc.setLineWidth(0.7);
 
-    // Conectar puntos en orden perimetral anatómico
-    for (let i = 0; i < pts.length; i++) {
-      const p1 = pts[i];
-      const p2 = pts[(i + 1) % pts.length];
-      doc.line(tx(p1.x), ty(p1.y), tx(p2.x), ty(p2.y));
+    const perimeterOrder = pieceType === 'front' 
+      ? ['16', '18', '17', '19', '3', '11', '14', '13', '10', '6', '8', '15', '16']
+      : ['16', '17', '1', '18', '3', '11', '14', '13', '10', '6', '8', '15', '16'];
+
+    for (let i = 0; i < perimeterOrder.length - 1; i++) {
+      const pA = pDict[perimeterOrder[i]];
+      const pB = pDict[perimeterOrder[i + 1]];
+      if (pA && pB) {
+        doc.line(tx(pA.x), ty(pA.y), tx(pB.x), ty(pB.y));
+      }
+    }
+
+    // DIBUJAR PINZA
+    if (pieceType === 'front' && pDict['18']) {
+      const dartTipY = pDict['18'].y + 90;
+      doc.line(tx(pDict['18'].x - 7.5), ty(pDict['18'].y), tx(pDict['18'].x), ty(dartTipY));
+      doc.line(tx(pDict['18'].x + 7.5), ty(pDict['18'].y), tx(pDict['18'].x), ty(dartTipY));
+    } else if (pieceType === 'back' && pDict['17']) {
+      const dartTipY = pDict['17'].y + 120;
+      doc.line(tx(pDict['17'].x - 10), ty(pDict['17'].y), tx(pDict['17'].x - 5), ty(dartTipY));
+      doc.line(tx(pDict['17'].x + 10), ty(pDict['17'].y), tx(pDict['17'].x - 5), ty(dartTipY));
     }
 
     // DIBUJAR PIQUETES DE ENSAMBLE
@@ -276,7 +312,7 @@ export function exportPatternToPdf(measurements: PatternMeasurements, silhouette
       doc.setLineWidth(0.3);
       doc.circle(px, py, 2.2, 'FD');
 
-      // Número
+      // Número con posicionamiento inteligente
       doc.setTextColor(pieceType === 'front' ? 28 : 193, pieceType === 'front' ? 25 : 68, pieceType === 'front' ? 22 : 14);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(5.5);
@@ -362,22 +398,30 @@ export function exportPatternToPdf(measurements: PatternMeasurements, silhouette
   const ctx = (x: number) => x * totalScale + totalOffX;
   const cty = (y: number) => y * totalScale + totalOffY;
 
+  const fDict: Record<string, PatternPoint> = {};
+  frontPts.forEach(p => { if (p.label) fDict[p.label] = p; });
+  const bDict: Record<string, PatternPoint> = {};
+  backPts.forEach(p => { if (p.label) bDict[p.label] = p; });
+
+  const fOrder = ['16', '18', '17', '19', '3', '11', '14', '13', '10', '6', '8', '15', '16'];
+  const bOrder = ['16', '17', '1', '18', '3', '11', '14', '13', '10', '6', '8', '15', '16'];
+
   // Delantero en trazo negro sólido
   doc.setDrawColor(28, 25, 22);
   doc.setLineWidth(0.7);
-  for (let i = 0; i < frontPts.length; i++) {
-    const p1 = frontPts[i];
-    const p2 = frontPts[(i + 1) % frontPts.length];
-    doc.line(ctx(p1.x), cty(p1.y), ctx(p2.x), cty(p2.y));
+  for (let i = 0; i < fOrder.length - 1; i++) {
+    const pA = fDict[fOrder[i]];
+    const pB = fDict[fOrder[i + 1]];
+    if (pA && pB) doc.line(ctx(pA.x), cty(pA.y), ctx(pB.x), cty(pB.y));
   }
 
   // Trasero en trazo terracota
   doc.setDrawColor(193, 68, 14);
   doc.setLineWidth(0.7);
-  for (let i = 0; i < backPts.length; i++) {
-    const p1 = backPts[i];
-    const p2 = backPts[(i + 1) % backPts.length];
-    doc.line(ctx(p1.x), cty(p1.y), ctx(p2.x), cty(p2.y));
+  for (let i = 0; i < bOrder.length - 1; i++) {
+    const pA = bDict[bOrder[i]];
+    const pB = bDict[bOrder[i + 1]];
+    if (pA && pB) doc.line(ctx(pA.x), cty(pA.y), ctx(pB.x), cty(pB.y));
   }
 
   // Puntos del conjunto
