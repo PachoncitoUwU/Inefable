@@ -7,12 +7,10 @@ import {
   Palette, 
   Layers, 
   Download, 
-  Sliders, 
-  Eye, 
-  TrendingUp, 
-  Shirt, 
-  Check,
-  RotateCcw
+  RotateCcw,
+  Ruler,
+  ArrowRight,
+  Check
 } from 'lucide-react';
 
 import { 
@@ -30,34 +28,47 @@ import {
 
 import { exportPatternToPdf } from './lib/pdf-generator';
 
-const springTransition = {
-  type: "spring" as const,
-  damping: 24,
-  stiffness: 260
+// ── EASING (segun skill animate/Emil) ──
+const EASE_OUT  = [0.23, 1, 0.32, 1] as const;
+const EASE_SPRING = { type: 'spring', damping: 22, stiffness: 280 } as const;
+
+const tabContentVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { 
+    opacity: 1, y: 0,
+    transition: { duration: 0.26, ease: EASE_OUT }
+  },
+  exit: { 
+    opacity: 0, y: -6,
+    transition: { duration: 0.18, ease: 'easeIn' }
+  }
 };
 
-const tabVariants: Variants = {
-  hidden: { opacity: 0, y: 12, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: "easeOut" } },
-  exit: { opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.18, ease: "easeIn" } }
+const staggerContainer: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } }
 };
+
+const staggerItem: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: EASE_OUT } }
+};
+
 
 function App() {
   const [activeTab, setActiveTab] = useState<'pattern' | 'advisor' | 'color'>('pattern');
 
-  // Estado del Generador de Patrones
   const [selectedSilhouette, setSelectedSilhouette] = useState<SilhouetteType>('baggy');
   const [measurements, setMeasurements] = useState<PatternMeasurements>(
     SILHOUETTES['baggy'].defaultMeasurements
   );
   const [showGuides, setShowGuides] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
 
-  // Estado del Asesor de Proporciones
   const [userHeight, setUserHeight] = useState<number>(175);
   const [userWeight, setUserWeight] = useState<number>(70);
   const [fitPreference, setFitPreference] = useState<'oversize' | 'relaxed' | 'fitted'>('oversize');
 
-  // Estado del Círculo Cromático
   const [selectedPalette, setSelectedPalette] = useState<OutfitPalette>(OUTFIT_PALETTES[0]);
 
   const currentPreset = SILHOUETTES[selectedSilhouette];
@@ -93,221 +104,214 @@ function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <Toaster richColors position="top-right" theme="dark" closeButton />
-
-      {/* HEADER PRINCIPAL APPLE-STYLE GLASS */}
-      <motion.header
-        initial={{ y: -40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          background: 'rgba(8, 9, 12, 0.75)',
-          backdropFilter: 'blur(24px) saturate(180%)',
-          borderBottom: '1px solid var(--border-subtle)',
-          padding: '0.85rem 1.5rem'
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+      <Toaster 
+        richColors 
+        position="top-right" 
+        theme="light"
+        toastOptions={{
+          style: {
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-medium)',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-sans)'
+          }
         }}
+      />
+
+      {/* === HEADER EDITORIAL === */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE_OUT }}
+        className="app-header"
+        style={{ padding: '0.8rem 1.5rem' }}
       >
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          
+          {/* Logo + marca */}
           <motion.div 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer' }}
+            whileHover={{ scale: 1.015 }}
+            whileTap={{ scale: 0.97 }}
+            transition={EASE_SPRING}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer', userSelect: 'none' }}
           >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #f3cc8a 0%, #e2b774 50%, #b8863b 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(226, 183, 116, 0.3)'
-              }}
-            >
-              <Scissors size={22} color="#08090c" strokeWidth={2.4} />
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'var(--bg-dark)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Scissors size={20} color="var(--text-inverse)" strokeWidth={2} />
             </div>
             <div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 800, letterSpacing: '0.06em', color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                INEFABLE
+              <h1 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.3rem',
+                fontWeight: 400,
+                letterSpacing: '0.04em',
+                color: 'var(--text-primary)',
+                lineHeight: 1.05
+              }}>
+                Inefable
               </h1>
-              <span style={{ fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-gold)', fontWeight: 600 }}>
-                Haute Couture & Motion Studio
+              <span style={{
+                fontSize: '0.64rem', letterSpacing: '0.15em',
+                textTransform: 'uppercase', color: 'var(--accent-gold)',
+                fontWeight: 600
+              }}>
+                Estudio de Patronaje
               </span>
             </div>
           </motion.div>
 
-          {/* Navegación por Pestañas con Indicador Animado */}
-          <nav style={{ display: 'flex', gap: '0.35rem', background: 'rgba(255, 255, 255, 0.03)', padding: '0.35rem', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
-            {[
-              { id: 'pattern', label: 'Estudio de Moldes', icon: Layers },
-              { id: 'advisor', label: 'Asesor de Fit', icon: Sparkles },
-              { id: 'color', label: 'Círculo Cromático', icon: Palette }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.55rem',
-                    padding: '0.55rem 1.15rem',
-                    borderRadius: '12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: isActive ? '#08090c' : 'var(--text-secondary)',
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: '0.88rem',
-                    zIndex: 1,
-                    transition: 'color 180ms ease'
-                  }}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTabPill"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: '12px',
-                        background: 'linear-gradient(135deg, #f3cc8a 0%, #e2b774 100%)',
-                        boxShadow: '0 2px 12px rgba(226, 183, 116, 0.35)',
-                        zIndex: -1
-                      }}
-                    />
-                  )}
-                  <Icon size={16} strokeWidth={isActive ? 2.4 : 2} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          {/* NAV TABS con indicador deslizante */}
+          <nav className="nav-pill" style={{ display: 'flex', gap: 0 }}>
+            {([
+              { id: 'pattern', label: 'Moldes', icon: Layers },
+              { id: 'advisor', label: 'Fit & Proporciones', icon: Sparkles },
+              { id: 'color',   label: 'Paletas', icon: Palette }
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                id={`tab-${tab.id}`}
+                className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+                style={{ position: 'relative', zIndex: 1 }}
+              >
+                {activeTab === tab.id && (
+                  <motion.div
+                    className="nav-tab-bg"
+                    layoutId="nav-indicator"
+                    transition={EASE_SPRING}
+                    style={{ zIndex: -1 }}
+                  />
+                )}
+                <tab.icon size={14} strokeWidth={2} style={{ flexShrink: 0 }} />
+                {tab.label}
+              </button>
+            ))}
           </nav>
         </div>
       </motion.header>
 
-      {/* CONTENIDO PRINCIPAL CON TRANSICIÓN SUAVE */}
-      <main style={{ flex: 1, maxWidth: '1280px', margin: '0 auto', padding: '2rem 1.5rem', width: '100%' }}>
+      {/* === CONTENIDO PRINCIPAL === */}
+      <main style={{ flex: 1, maxWidth: '1300px', margin: '0 auto', padding: '2rem 1.5rem', width: '100%' }}>
         <AnimatePresence mode="wait">
+
           
-          {/* PESTAÑA 1: CREAR MOLDES */}
+          {/* === TAB: MOLDES === */}
           {activeTab === 'pattern' && (
             <motion.div
               key="pattern-tab"
-              variants={tabVariants}
+              variants={tabContentVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
             >
-              {/* Catálogo de Siluetas */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-                  <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.45rem', fontWeight: 800 }}>
-                      1. Silueta & Proporción Base
-                    </h2>
-                    <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                      Elige el corte de pantalón. Los cálculos anatómicos de holgura se aplican automáticamente.
-                    </p>
-                  </div>
-                  <motion.span 
-                    animate={{ scale: [1, 1.03, 1] }} 
-                    transition={{ repeat: Infinity, duration: 4 }}
-                    className="glass-pill" 
-                    style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', color: 'var(--accent-gold)', fontWeight: 600 }}
-                  >
-                    ✦ {currentPreset.category}
-                  </motion.span>
+              {/* Encabezado de sección */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <span className="eyebrow">Generador de Moldes</span>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                    Patronaje técnico de pantalón
+                  </h2>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem', maxWidth: '480px' }}>
+                    19 puntos técnicos. Curvas de Bézier en el tiro. Escala real para impresión.
+                  </p>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                  {(Object.keys(SILHOUETTES) as SilhouetteType[]).map((key) => {
-                    const preset = SILHOUETTES[key];
-                    const isSelected = selectedSilhouette === key;
-                    return (
-                      <motion.div
-                        key={key}
-                        whileHover={{ y: -4, transition: { duration: 0.18 } }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => handleSilhouetteChange(key)}
-                        className="glass-panel"
-                        style={{
-                          padding: '1.3rem',
-                          cursor: 'pointer',
-                          border: isSelected ? '1px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
-                          background: isSelected ? 'rgba(226, 183, 116, 0.09)' : 'var(--bg-card)',
-                          position: 'relative',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        {isSelected && (
-                          <motion.div 
-                            layoutId="selectedBorder"
-                            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'var(--accent-gold)' }} 
-                          />
-                        )}
-                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', fontWeight: 600 }}>
-                          {preset.category}
-                        </span>
-                        <h3 style={{ fontSize: '1.12rem', fontWeight: 700, color: isSelected ? 'var(--accent-gold)' : 'var(--text-primary)', marginTop: '0.25rem' }}>
-                          {preset.name}
-                        </h3>
-                        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: '1.4' }}>
-                          {preset.tagline}
-                        </p>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                <span className="chip">
+                  ✦ {currentPreset.category}
+                </span>
               </div>
 
-              {/* Editor de Medidas & Canvas SVG */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
-                
-                {/* Sliders de Medidas */}
-                <motion.div layout className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.3rem' }}>
+              {/* Grid de siluetas */}
+              <motion.div
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}
+              >
+                {(Object.keys(SILHOUETTES) as SilhouetteType[]).map((key) => {
+                  const preset = SILHOUETTES[key];
+                  const isSelected = selectedSilhouette === key;
+                  return (
+                    <motion.div
+                      key={key}
+                      variants={staggerItem}
+                      whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
+                      onClick={() => handleSilhouetteChange(key)}
+                      className={`silhouette-card ${isSelected ? 'selected' : ''}`}
+                      style={{ position: 'relative', overflow: 'hidden' }}
+                    >
+                      {isSelected && (
+                        <motion.div
+                          layoutId="card-accent"
+                          style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+                            background: 'var(--accent-gold)',
+                            borderRadius: '14px 14px 0 0'
+                          }}
+                        />
+                      )}
+                      <span style={{ fontSize: '0.69rem', textTransform: 'uppercase', letterSpacing: '0.09em', color: isSelected ? 'var(--accent-gold)' : 'var(--text-muted)', fontWeight: 700 }}>
+                        {preset.category}
+                      </span>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.3rem', lineHeight: 1.2 }}>
+                        {preset.name}
+                      </h3>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.45rem', lineHeight: '1.45' }}>
+                        {preset.tagline}
+                      </p>
+                      {isSelected && (
+                        <div style={{ position: 'absolute', top: '12px', right: '12px', width: '20px', height: '20px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Check size={11} color="white" strokeWidth={3} />
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+
+              {/* Editor + Canvas */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+
+                {/* Panel de medidas */}
+                <motion.div layout className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <Sliders size={19} color="#e2b774" />
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Dimensiones Corporales (cm)</h3>
+                      <Ruler size={18} color="var(--accent-gold)" />
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Medidas Corporales (cm)</h3>
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
+                      className="btn-secondary"
                       onClick={() => setMeasurements(currentPreset.defaultMeasurements)}
-                      className="glass-pill"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.35rem 0.8rem', fontSize: '0.75rem', color: 'var(--text-secondary)', border: 'none' }}
+                      style={{ padding: '6px 12px', fontSize: '0.78rem', gap: '4px' }}
                     >
                       <RotateCcw size={12} />
                       Reset
-                    </motion.button>
+                    </button>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                    {[
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                    {([
                       { key: 'waist' as const, label: 'Contorno de Cintura', min: 60, max: 120 },
                       { key: 'hip' as const, label: 'Contorno de Cadera', min: 80, max: 135 },
-                      { key: 'crotchDepth' as const, label: 'Altura / Profundidad de Tiro', min: 20, max: 38 },
-                      { key: 'legLength' as const, label: 'Largo Total de Pierna', min: 85, max: 125 },
+                      { key: 'crotchDepth' as const, label: 'Profundidad de Tiro', min: 20, max: 38 },
+                      { key: 'legLength' as const, label: 'Largo de Pierna', min: 85, max: 125 },
                       { key: 'kneeWidth' as const, label: 'Ancho de Rodilla', min: 16, max: 36 },
-                      { key: 'bottomWidth' as const, label: 'Ancho de Bota / Bajo', min: 14, max: 42 }
-                    ].map((item) => (
+                      { key: 'bottomWidth' as const, label: 'Ancho de Bajo / Bota', min: 14, max: 42 }
+                    ]).map((item) => (
                       <div key={item.key}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                          <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{item.label}</span>
-                          <motion.span 
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                          <label className="field-label" style={{ marginBottom: 0 }}>{item.label}</label>
+                          <motion.span
                             key={measurements[item.key]}
-                            initial={{ scale: 1.2, color: '#f3cc8a' }}
-                            animate={{ scale: 1, color: '#e2b774' }}
-                            style={{ fontWeight: 700, fontFamily: 'var(--font-mono)' }}
+                            initial={{ scale: 1.15, color: 'var(--accent-gold)' }}
+                            animate={{ scale: 1, color: 'var(--text-primary)' }}
+                            transition={{ duration: 0.25 }}
+                            style={{ fontSize: '0.88rem', fontWeight: 700, fontFamily: 'var(--font-mono)' }}
                           >
                             {measurements[item.key]} cm
                           </motion.span>
@@ -318,165 +322,219 @@ function App() {
                           max={item.max}
                           value={measurements[item.key]}
                           onChange={(e) => handleMeasurementChange(item.key, Number(e.target.value))}
-                          style={{ width: '100%' }}
+                          style={{
+                            width: '100%', height: '5px', borderRadius: '4px',
+                            appearance: 'none', WebkitAppearance: 'none',
+                            background: `linear-gradient(to right, var(--accent-gold) 0%, var(--accent-gold) ${((measurements[item.key] - item.min) / (item.max - item.min)) * 100}%, var(--border-medium) ${((measurements[item.key] - item.min) / (item.max - item.min)) * 100}%, var(--border-medium) 100%)`,
+                            outline: 'none', cursor: 'pointer'
+                          }}
                         />
                       </div>
                     ))}
                   </div>
 
                   <motion.button
-                    whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(226, 183, 116, 0.4)' }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(193, 68, 14, 0.3)' }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={handleDownloadPdf}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.65rem',
-                      background: 'linear-gradient(135deg, #f3cc8a 0%, #e2b774 50%, #c49752 100%)',
-                      color: '#08090c',
-                      fontWeight: 800,
-                      fontSize: '0.96rem',
-                      padding: '1rem',
-                      borderRadius: '14px',
-                      border: 'none',
-                      marginTop: '0.5rem',
-                      boxShadow: '0 4px 18px rgba(226, 183, 116, 0.25)',
-                      cursor: 'pointer'
-                    }}
+                    className="btn-primary"
+                    style={{ justifyContent: 'center', padding: '13px', marginTop: '0.3rem', fontSize: '0.92rem' }}
                   >
-                    <Download size={19} />
-                    Descargar Molde PDF a Escala 100%
+                    <Download size={17} />
+                    Descargar Molde PDF — Escala Real
                   </motion.button>
                 </motion.div>
 
-                {/* Vista Previa Vectorial con Animación SVG */}
-                <motion.div layout className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                {/* Canvas SVG del patrón */}
+                <motion.div layout className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <Layers size={19} color="#e2b774" />
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Trazado Técnico Digital</h3>
+                      <Layers size={18} color="var(--accent-gold)" />
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Trazado Técnico — 19 Puntos</h3>
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowGuides(!showGuides)}
-                      className="glass-pill"
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.8rem', fontSize: '0.75rem', color: 'var(--text-secondary)', border: 'none' }}
-                    >
-                      <Eye size={14} />
-                      {showGuides ? 'Ocultar Piquetes' : 'Ver Piquetes'}
-                    </motion.button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => setShowGuides(!showGuides)}
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '4px' }}
+                      >
+                        {showGuides ? 'Ocultar guías' : 'Mostrar guías'}
+                      </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => setShowLabels(!showLabels)}
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '4px' }}
+                      >
+                        {showLabels ? 'Sin números' : 'Numerar puntos'}
+                      </button>
+                    </div>
                   </div>
 
-                  <div
-                    style={{
-                      background: '#06070a',
-                      borderRadius: '16px',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      padding: '1.5rem',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      minHeight: '420px',
-                      boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)'
-                    }}
+                  {/* SVG del patrón con los 19 puntos */}
+                  <motion.div
+                    key={selectedSilhouette}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4, ease: EASE_OUT }}
+                    className="pattern-canvas"
+                    style={{ width: '100%', overflow: 'auto', border: '1px solid var(--border-subtle)' }}
                   >
                     <svg
                       viewBox={`0 0 ${patternData.dimensions.width} ${patternData.dimensions.height}`}
-                      style={{ width: '100%', maxHeight: '460px' }}
+                      width="100%"
+                      height="auto"
+                      style={{ display: 'block', minHeight: '380px' }}
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <defs>
-                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#grid)" />
+                      {/* Fondo de papel */}
+                      <rect width={patternData.dimensions.width} height={patternData.dimensions.height} fill="#FFFEF9" />
+                      
+                      {/* Cuadrícula de papel de molde */}
+                      {showGuides && (
+                        <g opacity="0.18">
+                          {Array.from({ length: Math.ceil(patternData.dimensions.width / 50) }).map((_, i) => (
+                            <line key={`vg${i}`} x1={i * 50} y1="0" x2={i * 50} y2={patternData.dimensions.height} stroke="#C1440E" strokeWidth="0.3" />
+                          ))}
+                          {Array.from({ length: Math.ceil(patternData.dimensions.height / 50) }).map((_, i) => (
+                            <line key={`hg${i}`} x1="0" y1={i * 50} x2={patternData.dimensions.width} y2={i * 50} stroke="#C1440E" strokeWidth="0.3" />
+                          ))}
+                        </g>
+                      )}
 
-                      {/* Molde Delantero con transición suave */}
-                      <g>
-                        <motion.path
-                          d={patternData.frontSvgPath}
-                          fill="rgba(226, 183, 116, 0.09)"
-                          stroke="#e2b774"
-                          strokeWidth="2.2"
-                          strokeLinejoin="round"
-                          initial={false}
-                          animate={{ d: patternData.frontSvgPath }}
-                          transition={springTransition}
-                        />
-                        <line
-                          x1={patternData.grainLineFront.x1}
-                          y1={patternData.grainLineFront.y1}
-                          x2={patternData.grainLineFront.x2}
-                          y2={patternData.grainLineFront.y2}
-                          stroke="#f43f5e"
-                          strokeWidth="1.5"
-                          strokeDasharray="4 4"
-                        />
-                        <text x="160" y="25" fill="#f8fafc" fontSize="11" fontWeight="700" textAnchor="middle" letterSpacing="0.05em">
-                          DELANTERO (1/4)
-                        </text>
-                      </g>
+                      {/* DELANTERO — trazo principal */}
+                      <motion.path
+                        key={`front-${selectedSilhouette}`}
+                        d={patternData.frontSvgPath}
+                        fill="rgba(193, 68, 14, 0.06)"
+                        stroke="var(--bg-dark)"
+                        strokeWidth="1.8"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        initial={{ opacity: 0, pathLength: 0 }}
+                        animate={{ opacity: 1, pathLength: 1 }}
+                        transition={{ duration: 1.4, ease: EASE_OUT, delay: 0.1 }}
+                      />
 
-                      {/* Molde Trasero */}
-                      <g>
-                        <motion.path
-                          d={patternData.backSvgPath}
-                          fill="rgba(99, 102, 241, 0.09)"
-                          stroke="#818cf8"
-                          strokeWidth="2.2"
-                          strokeLinejoin="round"
-                          initial={false}
-                          animate={{ d: patternData.backSvgPath }}
-                          transition={springTransition}
-                        />
-                        <line
-                          x1={patternData.grainLineBack.x1}
-                          y1={patternData.grainLineBack.y1}
-                          x2={patternData.grainLineBack.x2}
-                          y2={patternData.grainLineBack.y2}
-                          stroke="#f43f5e"
-                          strokeWidth="1.5"
-                          strokeDasharray="4 4"
-                        />
-                        <text x="440" y="25" fill="#f8fafc" fontSize="11" fontWeight="700" textAnchor="middle" letterSpacing="0.05em">
-                          TRASERO (1/4)
-                        </text>
-                      </g>
+                      {/* TRASERO — trazo con color acento */}
+                      <motion.path
+                        key={`back-${selectedSilhouette}`}
+                        d={patternData.backSvgPath}
+                        fill="rgba(193, 68, 14, 0.03)"
+                        stroke="var(--accent-gold)"
+                        strokeWidth="1.8"
+                        strokeDasharray="6 3"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.5 }}
+                      />
 
-                      {/* Piquetes de costura */}
-                      {showGuides && patternData.notches.map((notch, idx) => (
-                        <circle key={idx} cx={notch.x} cy={notch.y} r="3.5" fill="#f43f5e" />
+                      {/* Líneas de aplomo (hilo de tela) */}
+                      {showGuides && (
+                        <g>
+                          <line
+                            x1={patternData.grainLineFront.x1} y1={patternData.grainLineFront.y1}
+                            x2={patternData.grainLineFront.x2} y2={patternData.grainLineFront.y2}
+                            stroke="#1C1916" strokeWidth="0.8" strokeDasharray="4 2" opacity="0.5"
+                          />
+                          <polygon
+                            points={`${patternData.grainLineFront.x1 - 4},${patternData.grainLineFront.y1 + 8} ${patternData.grainLineFront.x1 + 4},${patternData.grainLineFront.y1 + 8} ${patternData.grainLineFront.x1},${patternData.grainLineFront.y1}`}
+                            fill="#1C1916" opacity="0.5"
+                          />
+                          <line
+                            x1={patternData.grainLineBack.x1} y1={patternData.grainLineBack.y1}
+                            x2={patternData.grainLineBack.x2} y2={patternData.grainLineBack.y2}
+                            stroke="var(--accent-gold)" strokeWidth="0.8" strokeDasharray="4 2" opacity="0.5"
+                          />
+                        </g>
+                      )}
+
+                      {/* Piquetes de ensamble */}
+                      {showGuides && patternData.notches.map((n, i) => (
+                        <rect key={`notch-${i}`} x={n.x - 1} y={n.y - 4} width="2" height="8" fill="#1C1916" opacity="0.6" />
                       ))}
-                    </svg>
-                  </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    <span>• Línea discontinua: Aplomo e Hilo de Tela</span>
-                    <span>• Puntos rojos: Piquetes de coincidencia</span>
+                      {/* Puntos numerados del DELANTERO */}
+                      {showLabels && patternData.labelPoints.front.map((pt) => (
+                        <g key={`fp-${pt.label}`}>
+                          <circle cx={pt.x} cy={pt.y} r="3.5" fill="var(--bg-dark)" stroke="white" strokeWidth="1" />
+                          <text
+                            x={pt.x + 5} y={pt.y - 4}
+                            fontSize="7" fill="var(--bg-dark)" fontFamily="var(--font-mono)"
+                            fontWeight="600"
+                          >
+                            {pt.label}
+                          </text>
+                        </g>
+                      ))}
+
+                      {/* Puntos numerados del TRASERO */}
+                      {showLabels && patternData.labelPoints.back.map((pt) => (
+                        <g key={`bp-${pt.label}`}>
+                          <circle cx={pt.x} cy={pt.y} r="3.5" fill="var(--accent-gold)" stroke="white" strokeWidth="1" />
+                          <text
+                            x={pt.x + 5} y={pt.y - 4}
+                            fontSize="7" fill="var(--accent-gold)" fontFamily="var(--font-mono)"
+                            fontWeight="600"
+                          >
+                            {pt.label}
+                          </text>
+                        </g>
+                      ))}
+
+                      {/* Etiquetas de pieza */}
+                      <text x="60" y="40" fontSize="10" fill="var(--bg-dark)" fontFamily="var(--font-mono)" fontWeight="700" opacity="0.6">
+                        DELANTERO
+                      </text>
+                      <text x={patternData.grainLineBack.x1 - 30} y="40" fontSize="10" fill="var(--accent-gold)" fontFamily="var(--font-mono)" fontWeight="700" opacity="0.7">
+                        TRASERO
+                      </text>
+                    </svg>
+                  </motion.div>
+
+                  {/* Leyenda */}
+                  <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                      <div style={{ width: '20px', height: '2px', background: 'var(--bg-dark)' }} />
+                      Delantero
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                      <div style={{ width: '20px', height: '2px', background: 'var(--accent-gold)', borderTop: '2px dashed var(--accent-gold)' }} />
+                      Trasero
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                      <div style={{ width: '4px', height: '14px', background: 'var(--bg-dark)', opacity: 0.5 }} />
+                      Piquetes
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                      <ArrowRight size={12} />
+                      Hilo de tela (aplomo)
+                    </div>
                   </div>
                 </motion.div>
-
               </div>
+
+
             </motion.div>
           )}
 
-          {/* PESTAÑA 2: ASESOR DE PROPORCIONES */}
+
           {activeTab === 'advisor' && (
             <motion.div
               key="advisor-tab"
-              variants={tabVariants}
+              variants={tabContentVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
             >
               <div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.45rem', fontWeight: 800 }}>
-                  Asesor de Proporciones & Fit Inteligente
+                <span className="eyebrow">Asesor de Fit</span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  Proporciones &amp; volumen
                 </h2>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
                   Ajuste de volúmenes y proporciones de sastrería para optimizar tu silueta visual.
                 </p>
               </div>
@@ -484,15 +542,15 @@ function App() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
                 {/* Entradas del usuario */}
                 <div className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.3rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    <Shirt size={19} color="#e2b774" />
-                    Parámetros Antropométricos
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    <Sparkles size={18} color="var(--accent-gold)" />
+                    Parámetros Corporales
                   </h3>
 
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Estatura</span>
-                      <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)' }}>{userHeight} cm</span>
+                        <label className="field-label" style={{ marginBottom: 0 }}>Estatura</label>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userHeight} cm</span>
                     </div>
                     <input
                       type="range"
@@ -506,8 +564,8 @@ function App() {
 
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Peso Aproximado</span>
-                      <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)' }}>{userWeight} kg</span>
+                        <label className="field-label" style={{ marginBottom: 0 }}>Peso Aproximado</label>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userWeight} kg</span>
                     </div>
                     <input
                       type="range"
@@ -535,8 +593,8 @@ function App() {
                             style={{
                               padding: '0.65rem 0.4rem',
                               borderRadius: '12px',
-                              border: isChosen ? '1px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
-                              background: isChosen ? 'rgba(226, 183, 116, 0.15)' : 'var(--bg-glass)',
+                              border: isChosen ? '2px solid var(--accent-gold)' : '1.5px solid var(--border-medium)',
+                              background: isChosen ? 'var(--accent-light)' : 'var(--bg-secondary)',
                               color: isChosen ? 'var(--accent-gold)' : 'var(--text-secondary)',
                               fontSize: '0.82rem',
                               fontWeight: 700,
@@ -552,11 +610,11 @@ function App() {
                   </div>
 
                   {/* Resumen del Fit */}
-                  <div style={{ padding: '1.2rem', borderRadius: '14px', background: 'rgba(226, 183, 116, 0.04)', border: '1px solid rgba(226, 183, 116, 0.2)' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <div style={{ padding: '1.2rem', borderRadius: '14px', background: 'var(--accent-light)', border: '1px solid var(--border-accent)' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                       Fórmula de Estilo Recomendada:
                     </span>
-                    <p style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 700, marginTop: '0.3rem' }}>
+                    <p style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '0.3rem' }}>
                       {userHeight >= 178 ? 'Pantalón Baggy Full-Break + Buzo Boxy Cropped' : 'Pantalón Tiro Alto No-Break + Prenda Superior Entallada'}
                     </p>
                   </div>
@@ -567,22 +625,22 @@ function App() {
                   {proportionAdvice.map((rule, idx) => (
                     <motion.div
                       key={idx}
-                      initial={{ opacity: 0, x: 20 }}
+                      initial={{ opacity: 0, x: 16 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1, duration: 0.3 }}
+                      transition={{ delay: idx * 0.08, duration: 0.28, ease: EASE_OUT }}
                       className="glass-panel"
                       style={{ padding: '1.4rem' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.4rem' }}>
-                        <TrendingUp size={17} color="#e2b774" />
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>{rule.ruleName}</h4>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-gold)', flexShrink: 0 }} />
+                        <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rule.ruleName}</h4>
                       </div>
-                      <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+                      <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                         {rule.guideline}
                       </p>
-                      <div style={{ marginTop: '0.85rem', padding: '0.8rem', borderRadius: '10px', background: 'rgba(226, 183, 116, 0.07)', borderLeft: '3px solid var(--accent-gold)' }}>
-                        <p style={{ fontSize: '0.84rem', color: '#f8fafc', fontWeight: 600 }}>
-                          ✦ {rule.recommendation}
+                      <div style={{ marginTop: '0.85rem', padding: '0.85rem', borderRadius: '10px', background: 'var(--accent-light)', borderLeft: '3px solid var(--accent-gold)' }}>
+                        <p style={{ fontSize: '0.84rem', color: 'var(--accent-gold)', fontWeight: 600 }}>
+                          {'\u2192'} {rule.recommendation}
                         </p>
                       </div>
                     </motion.div>
@@ -596,18 +654,19 @@ function App() {
           {activeTab === 'color' && (
             <motion.div
               key="color-tab"
-              variants={tabVariants}
+              variants={tabContentVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
             >
               <div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.45rem', fontWeight: 800 }}>
-                  Estudio Cromático & Armonías de Vestuario
+                <span className="eyebrow">Círculo Cromático</span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  Armonías de Vestuario
                 </h2>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                  Paletas calibradas con teoría del color para combinar prendas superiores, inferiores y calzado.
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  Paletas calibradas con teoría del color. Combinaciones probadas para prendas superiores, inferiores y calzado.
                 </p>
               </div>
 

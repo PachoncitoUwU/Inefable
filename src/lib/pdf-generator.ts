@@ -147,6 +147,6 @@ export function exportPatternToPdf(measurements: PatternMeasurements, silhouette
   doc.text('▲ HILO DE TELA (APLOMO) ▲', 105, 150, { align: 'center', angle: 90 });
 
   // Descargar archivo
-  const filename = `Inefable-Molde-${preset.id}-${measurements.waist}w-${measurements.legLength}l.pdf`;
+  const filename = `Inefable-Molde-${silhouette}-${measurements.waist}w-${measurements.legLength}l.pdf`;
   doc.save(filename);
 }
