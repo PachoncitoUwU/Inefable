@@ -10,7 +10,8 @@ import {
   RotateCcw,
   Ruler,
   ArrowRight,
-  Check
+  Check,
+  User
 } from 'lucide-react';
 
 import { 
@@ -27,6 +28,10 @@ import {
 } from './lib/color-theory';
 
 import { exportPatternToPdf } from './lib/pdf-generator';
+
+import ChromaticWheel from './components/chromatic-wheel';
+import StyleAssistant from './components/style-assistant';
+import NpcVisualizer from './components/npc-visualizer';
 
 // ── EASING (segun skill animate/Emil) ──
 const EASE_OUT  = [0.23, 1, 0.32, 1] as const;
@@ -78,7 +83,7 @@ const POINT_NAMES: Record<string, string> = {
 };
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'pattern' | 'advisor' | 'color'>('pattern');
+  const [activeTab, setActiveTab] = useState<'pattern' | 'advisor' | 'color' | 'npc'>('pattern');
 
   const [selectedSilhouette, setSelectedSilhouette] = useState<SilhouetteType>('baggy');
   const [measurements, setMeasurements] = useState<PatternMeasurements>(
@@ -163,27 +168,29 @@ function App() {
           >
             <div style={{
               width: '40px', height: '40px', borderRadius: '10px',
-              background: 'var(--bg-dark)',
+              background: 'var(--accent-gold)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0
+              flexShrink: 0,
+              boxShadow: '0 0 16px rgba(255, 90, 31, 0.4)'
             }}>
-              <Scissors size={20} color="var(--text-inverse)" strokeWidth={2} />
+              <Scissors size={20} color="#0C0D12" strokeWidth={2.5} />
             </div>
             <div>
               <h1 style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: '1.3rem',
-                fontWeight: 400,
-                letterSpacing: '0.04em',
+                fontSize: '1.45rem',
+                fontWeight: 800,
+                letterSpacing: '-0.01em',
                 color: 'var(--text-primary)',
-                lineHeight: 1.05
+                lineHeight: 1.0,
+                textTransform: 'uppercase'
               }}>
                 Inefable
               </h1>
               <span style={{
-                fontSize: '0.64rem', letterSpacing: '0.15em',
+                fontSize: '0.6rem', letterSpacing: '0.2em',
                 textTransform: 'uppercase', color: 'var(--accent-gold)',
-                fontWeight: 600
+                fontWeight: 600, fontFamily: 'var(--font-mono)'
               }}>
                 Estudio de Patronaje
               </span>
@@ -195,7 +202,8 @@ function App() {
             {([
               { id: 'pattern', label: 'Moldes', icon: Layers },
               { id: 'advisor', label: 'Fit & Proporciones', icon: Sparkles },
-              { id: 'color',   label: 'Paletas', icon: Palette }
+              { id: 'color',   label: 'Paletas', icon: Palette },
+              { id: 'npc',     label: 'NPC 3D', icon: User }
             ] as const).map((tab) => (
               <button
                 key={tab.id}
@@ -709,84 +717,91 @@ function App() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
-                {/* Entradas del usuario */}
-                <div className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.3rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    <Sparkles size={18} color="var(--accent-gold)" />
-                    Parámetros Corporales
-                  </h3>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                        <label className="field-label" style={{ marginBottom: 0 }}>Estatura</label>
-                        <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userHeight} cm</span>
+                {/* Entradas del usuario + Asistente de IA */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.3rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <Sparkles size={18} color="var(--accent-gold)" />
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Parámetros Corporales</h3>
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min="150"
-                      max="205"
-                      value={userHeight}
-                      onChange={(e) => setUserHeight(Number(e.target.value))}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
 
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                        <label className="field-label" style={{ marginBottom: 0 }}>Peso Aproximado</label>
-                        <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userWeight} kg</span>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                          <label className="field-label" style={{ marginBottom: 0 }}>Estatura</label>
+                          <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userHeight} cm</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="150"
+                        max="205"
+                        value={userHeight}
+                        onChange={(e) => setUserHeight(Number(e.target.value))}
+                        style={{ width: '100%' }}
+                      />
                     </div>
-                    <input
-                      type="range"
-                      min="45"
-                      max="125"
-                      value={userWeight}
-                      onChange={(e) => setUserWeight(Number(e.target.value))}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
 
-                  <div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.55rem', fontWeight: 500 }}>
-                      Preferencia de Holgura (Fit)
-                    </span>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                      {(['oversize', 'relaxed', 'fitted'] as const).map((mode) => {
-                        const isChosen = fitPreference === mode;
-                        return (
-                          <motion.button
-                            key={mode}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => setFitPreference(mode)}
-                            style={{
-                              padding: '0.65rem 0.4rem',
-                              borderRadius: '12px',
-                              border: isChosen ? '2px solid var(--accent-gold)' : '1.5px solid var(--border-medium)',
-                              background: isChosen ? 'var(--accent-light)' : 'var(--bg-secondary)',
-                              color: isChosen ? 'var(--accent-gold)' : 'var(--text-secondary)',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                              textTransform: 'capitalize',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {mode}
-                          </motion.button>
-                        );
-                      })}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                          <label className="field-label" style={{ marginBottom: 0 }}>Peso Aproximado</label>
+                          <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userWeight} kg</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="45"
+                        max="125"
+                        value={userWeight}
+                        onChange={(e) => setUserWeight(Number(e.target.value))}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.55rem', fontWeight: 500 }}>
+                        Preferencia de Holgura (Fit)
+                      </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                        {(['oversize', 'relaxed', 'fitted'] as const).map((mode) => {
+                          const isChosen = fitPreference === mode;
+                          return (
+                            <motion.button
+                              key={mode}
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => setFitPreference(mode)}
+                              style={{
+                                padding: '0.65rem 0.4rem',
+                                borderRadius: '12px',
+                                border: isChosen ? '2px solid var(--accent-gold)' : '1.5px solid var(--border-medium)',
+                                background: isChosen ? 'var(--accent-light)' : 'var(--bg-secondary)',
+                                color: isChosen ? 'var(--accent-gold)' : 'var(--text-secondary)',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                textTransform: 'capitalize',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {mode}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Resumen del Fit */}
+                    <div style={{ padding: '1.2rem', borderRadius: '14px', background: 'var(--accent-light)', border: '1px solid var(--border-accent)' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        Fórmula de Estilo Recomendada:
+                      </span>
+                      <p style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '0.3rem' }}>
+                        {userHeight >= 178 ? 'Pantalón Baggy Full-Break + Buzo Boxy Cropped' : 'Pantalón Tiro Alto No-Break + Prenda Superior Entallada'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Resumen del Fit */}
-                  <div style={{ padding: '1.2rem', borderRadius: '14px', background: 'var(--accent-light)', border: '1px solid var(--border-accent)' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                      Fórmula de Estilo Recomendada:
-                    </span>
-                    <p style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '0.3rem' }}>
-                      {userHeight >= 178 ? 'Pantalón Baggy Full-Break + Buzo Boxy Cropped' : 'Pantalón Tiro Alto No-Break + Prenda Superior Entallada'}
-                    </p>
-                  </div>
+                  {/* Asistente Conversacional de Estilismo IA */}
+                  <StyleAssistant />
                 </div>
 
                 {/* Tarjetas de Recomendaciones con Animaciones de Entrada */}
@@ -839,39 +854,62 @@ function App() {
                 </p>
               </div>
 
-              {/* Selector de Paletas */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.1rem' }}>
-                {OUTFIT_PALETTES.map((pal) => {
-                  const isSelected = selectedPalette.id === pal.id;
-                  return (
-                    <motion.div
-                      key={pal.id}
-                      whileHover={{ y: -4, transition: { duration: 0.18 } }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setSelectedPalette(pal)}
-                      className="glass-panel"
-                      style={{
-                        padding: '1.3rem',
-                        cursor: 'pointer',
-                        border: isSelected ? '1px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
-                        background: isSelected ? 'rgba(226, 183, 116, 0.08)' : 'var(--bg-card)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '0.85rem' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: pal.top.hex, border: '1px solid rgba(255,255,255,0.25)' }} />
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: pal.bottom.hex, border: '1px solid rgba(255,255,255,0.25)' }} />
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: pal.footwear.hex, border: '1px solid rgba(255,255,255,0.25)' }} />
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: pal.accessory.hex, border: '1px solid rgba(255,255,255,0.25)' }} />
-                      </div>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: isSelected ? 'var(--accent-gold)' : 'var(--text-primary)' }}>
-                        {pal.name}
-                      </h3>
-                      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.4rem', lineHeight: '1.4' }}>
-                        {pal.description}
-                      </p>
-                    </motion.div>
-                  );
-                })}
+              {/* Grid de Paletas y Círculo Cromático */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
+                
+                {/* Paletas de Sastrería Pre-calibradas */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    <Palette size={18} color="var(--accent-gold)" />
+                    Paletas Editoriales Curadas
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.9rem' }}>
+                    {OUTFIT_PALETTES.map((pal) => {
+                      const isSelected = selectedPalette.id === pal.id;
+                      return (
+                        <motion.div
+                          key={pal.id}
+                          whileHover={{ y: -2, transition: { duration: 0.18 } }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setSelectedPalette(pal)}
+                          className="glass-panel"
+                          style={{
+                            padding: '1rem 1.3rem',
+                            cursor: 'pointer',
+                            border: isSelected ? '1.5px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
+                            background: isSelected ? 'rgba(193, 68, 14, 0.05)' : 'var(--bg-card)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '1rem'
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ fontSize: '0.94rem', fontWeight: 700, color: isSelected ? 'var(--accent-gold)' : 'var(--text-primary)' }}>
+                              {pal.name}
+                            </h4>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem', lineHeight: '1.3' }}>
+                              {pal.description}
+                            </p>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.top.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.bottom.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.footwear.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.accessory.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Círculo Cromático Interactivo */}
+                <div className="glass-panel" style={{ padding: '0.5rem' }}>
+                  <ChromaticWheel onPaletteSelect={(pal) => setSelectedPalette(pal as any)} />
+                </div>
+
               </div>
 
               {/* Desglose de la Paleta Seleccionada */}
@@ -939,6 +977,37 @@ function App() {
                   ))}
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+
+          {/* === TAB: NPC 3D === */}
+          {activeTab === 'npc' && (
+            <motion.div
+              key="npc-tab"
+              variants={tabContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+            >
+              <div>
+                <span className="eyebrow">Probador Virtual</span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  Probador Corpóreo 2.5D (NPC 3D)
+                </h2>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  Visualiza las siluetas de patronaje adaptadas a tus proporciones en un maniquí virtual reactivo.
+                </p>
+              </div>
+
+              <NpcVisualizer
+                userHeight={userHeight}
+                userWeight={userWeight}
+                selectedSilhouette={selectedSilhouette}
+                onSilhouetteChange={(sil) => handleSilhouetteChange(sil)}
+                onHeightChange={(h) => setUserHeight(h)}
+                onWeightChange={(w) => setUserWeight(w)}
+              />
             </motion.div>
           )}
 
