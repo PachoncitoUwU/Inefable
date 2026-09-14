@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, User, Bot, HelpCircle } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Sparkles, Send, User, Bot, Shirt, Compass, Lightbulb, MessageSquareQuote } from 'lucide-react';
 
 interface AdviceResult {
   top: string;
@@ -14,6 +14,13 @@ interface Message {
   sender: 'user' | 'ai';
   text: string;
   advice?: AdviceResult;
+  timestamp?: string;
+}
+
+interface StyleAssistantProps {
+  userHeight?: number;
+  userWeight?: number;
+  selectedSilhouette?: string;
 }
 
 const COLOR_ADVICE: Record<string, AdviceResult> = {
@@ -65,6 +72,12 @@ const COLOR_ADVICE: Record<string, AdviceResult> = {
     cap: 'Gorra color negro mate o beige.',
     tip: 'El rojo es un color muy activo visualmente. Deja que sea el protagonista manteniendo la parte superior y el calzado en tonos neutros apagados.'
   },
+  terracota: {
+    top: 'Camisa de lino en color Hueso Crudo o buzo fino en Azul Índigo para un contraste de alta costura.',
+    shoes: 'Mocasines de piel café espresso o tenis minimalistas de suela caramelo.',
+    cap: 'Gorra de sarga color Arena Tostada o Café Moka.',
+    tip: 'La terracota es el color emblema de la sastrería contemporánea. Luce impecable con texturas de lino y joyería en latón o plata envejecida.'
+  },
   beige: {
     top: 'Chaqueta de mezclilla azul (Denim) sobre una playera blanca, o buzo de cuello alto color Café Espresso.',
     shoes: 'Mocasines de gamuza marrón o tenis blancos clásicos.',
@@ -80,18 +93,20 @@ const COLOR_ADVICE: Record<string, AdviceResult> = {
 };
 
 const SUGGESTIONS = [
-  'Tengo un pantalón verde 🟢',
-  'Outfit con camisa azul 🔵',
-  '¿Cómo combino jeans negros? ⚫',
-  'Prenda café para look casual 🤎'
+  '¿Cómo combino un pantalón verde oliva? 🟢',
+  'Outfit elegante para pantalón terracota 🏺',
+  '¿Qué prendas usar con pantalón negro? ⚫',
+  'Combinación con pantalón café o beige 🤎',
+  '¿Cómo alargar mi estatura con ropa? 📏'
 ];
 
-export default function StyleAssistant() {
+export default function StyleAssistant({ userHeight = 175, userWeight = 70, selectedSilhouette = 'baggy' }: StyleAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       sender: 'ai',
-      text: '¡Hola! Soy tu asistente de estilo personal de **Inefable**. Dime qué prenda tienes (ej: pantalón verde, camisa azul, buzo negro) y te recomendaré la combinación perfecta de ropa, calzado, gorra y tips sastreros.'
+      text: `¡Saludos! Soy tu **Asistente Sastrero con IA de Inefable**. Conozco tus medidas actuales (${userHeight} cm, ${userWeight} kg) y tu corte seleccionado (*${selectedSilhouette}*). Dime qué prenda o color tienes en mente y te asesoraré con combinaciones de alta costura, calzado, accesorios y reglas de proporción.`,
+      timestamp: 'Ahora'
     }
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -110,32 +125,43 @@ export default function StyleAssistant() {
     return text
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''); // Quita acentos y diacríticos
+      .replace(/[\u0300-\u036f]/g, '');
   };
 
   const processResponse = (userInput: string) => {
     setIsTyping(true);
     const normalized = normalizeText(userInput);
 
-    // Buscar coincidencia de color
-    let matchedColor = '';
-    const colorsKeys = Object.keys(COLOR_ADVICE);
-    for (const key of colorsKeys) {
-      if (normalized.includes(key)) {
-        matchedColor = key;
-        break;
-      }
-    }
-
     setTimeout(() => {
       let aiText = '';
       let advice: AdviceResult | undefined;
 
-      if (matchedColor) {
-        advice = COLOR_ADVICE[matchedColor];
-        aiText = `He analizado tu prenda color **${matchedColor.toUpperCase()}**. Aquí tienes una propuesta de combinación estilística diseñada para destacar:`;
+      // Consulta de estatura/proporción
+      if (normalized.includes('estatura') || normalized.includes('altura') || normalized.includes('alargar') || normalized.includes('bajito') || normalized.includes('alto')) {
+        aiText = `Para una estatura de **${userHeight} cm** y peso de **${userWeight} kg**, la regla de oro es el **balance vertical de 1/3 a 2/3**: mantén la cintura del pantalón en tiro medio-alto y usa una prenda superior entallada o cropped para que las piernas parezcan un 20% más largas visualmente.`;
+        advice = {
+          top: 'Camisa o buzo con corte Boxy Cropped (justo a la altura de la pretina).',
+          shoes: 'Calzado que comparta un tono similar al pantalón para no cortar la línea de la pierna.',
+          cap: 'Gorra o sombrero de copa media para sumar 3-4 cm de elongación natural.',
+          tip: 'Evita prendas superiores extra largas que tapen la cadera, ya que dividen el cuerpo al 50-50 y acortan la figura.'
+        };
       } else {
-        aiText = 'No he logrado identificar un color específico en tu mensaje (como verde, azul, negro, café, beige, gris, rojo). Prueba escribiendo algo como: *"Tengo un pantalón verde"* o elige uno de las sugerencias rápidas abajo.';
+        // Buscar coincidencia de color
+        let matchedColor = '';
+        const colorsKeys = Object.keys(COLOR_ADVICE);
+        for (const key of colorsKeys) {
+          if (normalized.includes(key)) {
+            matchedColor = key;
+            break;
+          }
+        }
+
+        if (matchedColor) {
+          advice = COLOR_ADVICE[matchedColor];
+          aiText = `He analizado tu prenda color **${matchedColor.toUpperCase()}** teniendo en cuenta tu complexión de **${userHeight} cm** y corte **${selectedSilhouette}**. Esta es la fórmula de coordinación recomendada:`;
+        } else {
+          aiText = `Entiendo tu consulta sobre *"${userInput}"*. Para darte la fórmula exacta de sastrería, indícame un color predominante (como verde, azul, terracota, negro, café, beige, gris, blanco) o pregúntame por proporciones según tus medidas.`;
+        }
       }
 
       setMessages(prev => [
@@ -144,21 +170,22 @@ export default function StyleAssistant() {
           id: Date.now().toString(),
           sender: 'ai',
           text: aiText,
-          advice
+          advice,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
       setIsTyping(false);
-    }, 1200);
+    }, 900);
   };
 
   const handleSend = (textToSend: string) => {
     if (!textToSend.trim()) return;
 
-    // Agregar mensaje del usuario
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      text: textToSend
+      text: textToSend,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -167,143 +194,296 @@ export default function StyleAssistant() {
   };
 
   return (
-    <div className="chat-container">
-      {/* Cabecera del Chat */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.9rem 1.2rem', background: 'var(--bg-dark)', color: 'var(--text-inverse)' }}>
-        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Sparkles size={14} color="white" />
+    <div className="glass-panel" style={{
+      padding: '0',
+      overflow: 'hidden',
+      border: '1.5px solid var(--border-accent)',
+      boxShadow: '0 12px 40px rgba(193, 68, 14, 0.08)',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      
+      {/* ── HEADER DEL ASISTENTE IA (Diseño llamativo) ── */}
+      <div style={{
+        padding: '1.2rem 1.6rem',
+        background: 'linear-gradient(135deg, rgba(28, 25, 22, 0.96) 0%, rgba(45, 38, 32, 0.98) 100%)',
+        color: 'var(--text-inverse)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          {/* Avatar IA con pulso interactivo */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, var(--accent-gold) 0%, #D4600A 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(193, 68, 14, 0.4)'
+            }}>
+              <Bot size={22} color="white" />
+            </div>
+            <span style={{
+              position: 'absolute',
+              bottom: '-2px',
+              right: '-2px',
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: '#10B981',
+              border: '2px solid #1C1916'
+            }} />
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, color: 'white', letterSpacing: '0.01em' }}>
+                Asistente Sastrero IA
+              </h3>
+              <span className="chip" style={{
+                background: 'rgba(193, 68, 14, 0.25)',
+                color: '#FF9068',
+                borderColor: 'rgba(255, 144, 104, 0.3)',
+                fontSize: '0.65rem',
+                padding: '2px 8px'
+              }}>
+                <Sparkles size={10} /> IA Activa
+              </span>
+            </div>
+            <p style={{ fontSize: '0.76rem', color: '#B3AAA0', marginTop: '2px' }}>
+              Consultor de estilo, proporciones de corte y teoría del color en tiempo real
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.03em', color: 'var(--text-inverse)' }}>Asistente Sastrero IA</h3>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Asesor de fit &amp; volumen</span>
+
+        {/* Badge con parámetros sincronizados */}
+        <div style={{
+          display: 'none',
+          padding: '6px 12px',
+          borderRadius: '100px',
+          background: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          fontSize: '0.74rem',
+          fontFamily: 'var(--font-mono)',
+          color: '#E5DFD7'
+        }} className="sm:flex">
+          {userHeight}cm · {userWeight}kg · {selectedSilhouette.toUpperCase()}
         </div>
       </div>
 
-      {/* Ventana de mensajes */}
-      <div className="chat-messages">
+      {/* ── VENTANA DE MENSAJES (con scroll suave y espacio amplio) ── */}
+      <div style={{
+        padding: '1.5rem',
+        height: '380px',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.2rem',
+        background: 'linear-gradient(180deg, rgba(255, 252, 249, 0.7) 0%, rgba(244, 239, 233, 0.9) 100%)'
+      }}>
         {messages.map((msg) => (
-          <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <div 
-              className={`chat-bubble ${msg.sender}`}
-              style={{
+          <div
+            key={msg.id}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+              gap: '0.4rem'
+            }}
+          >
+            {/* Burbuja de mensaje */}
+            <div style={{
+              maxWidth: '85%',
+              padding: '0.9rem 1.2rem',
+              borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+              background: msg.sender === 'user' ? 'var(--accent-gold)' : 'var(--bg-card)',
+              color: msg.sender === 'user' ? 'white' : 'var(--text-primary)',
+              border: msg.sender === 'user' ? 'none' : '1px solid var(--border-medium)',
+              boxShadow: msg.sender === 'user' ? '0 4px 14px rgba(193, 68, 14, 0.25)' : '0 2px 10px rgba(28, 25, 22, 0.05)',
+              fontSize: '0.88rem',
+              lineHeight: '1.5'
+            }}>
+              <div style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '0.4rem'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', opacity: 0.7, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.1rem' }}>
-                {msg.sender === 'user' ? <User size={10} /> : <Bot size={10} />}
-                {msg.sender === 'user' ? 'Tú' : 'Inefable AI'}
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '0.68rem',
+                opacity: 0.75,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                marginBottom: '0.35rem'
+              }}>
+                {msg.sender === 'user' ? <User size={11} /> : <Bot size={11} />}
+                <span>{msg.sender === 'user' ? 'Tú' : 'Sastre IA Inefable'}</span>
+                {msg.timestamp && <span style={{ opacity: 0.6 }}>· {msg.timestamp}</span>}
               </div>
-              <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+              <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:inherit; font-weight:700;">$1</strong>') }} />
             </div>
 
-            {/* Ficha de Asesoría de Estilo Detallada si existe coincidencia */}
+            {/* Ficha técnica estructurada de la recomendación */}
             {msg.advice && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25 }}
                 style={{
-                  margin: '0.2rem 0 0.8rem 1.2rem',
+                  maxWidth: '85%',
                   padding: '1.2rem',
-                  borderRadius: '14px',
+                  borderRadius: '16px',
                   background: 'var(--bg-card-hover)',
-                  border: '1.5px solid var(--border-medium)',
+                  border: '1.5px solid var(--border-accent)',
+                  boxShadow: '0 6px 20px rgba(193, 68, 14, 0.06)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.8rem',
-                  maxWidth: '85%'
+                  gap: '0.85rem'
                 }}
               >
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.7rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>👕 Prenda Superior Recomendada</span>
-                    <p style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-primary)', marginTop: '0.15rem' }}>{msg.advice.top}</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                  
+                  {/* Prenda Superior */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '9px 12px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--accent-gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Shirt size={12} /> Prenda Superior
+                    </span>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginTop: '2px', lineHeight: '1.35' }}>
+                      {msg.advice.top}
+                    </p>
                   </div>
-                  <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.6rem' }}>
-                    <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>👟 Calzado Coordinado</span>
-                    <p style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-primary)', marginTop: '0.15rem' }}>{msg.advice.shoes}</p>
+
+                  {/* Calzado */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '9px 12px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--accent-gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Compass size={12} /> Calzado Coordinado
+                    </span>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginTop: '2px', lineHeight: '1.35' }}>
+                      {msg.advice.shoes}
+                    </p>
                   </div>
-                  <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.6rem' }}>
-                    <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>🧢 Gorra / Accesorio de Cabeza</span>
-                    <p style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-primary)', marginTop: '0.15rem' }}>{msg.advice.cap}</p>
+
+                  {/* Gorra / Accesorio */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '9px 12px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--accent-gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MessageSquareQuote size={12} /> Accesorio Focal
+                    </span>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginTop: '2px', lineHeight: '1.35' }}>
+                      {msg.advice.cap}
+                    </p>
                   </div>
+
                 </div>
 
-                <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'var(--accent-light)', borderLeft: '3px solid var(--accent-gold)', marginTop: '0.2rem' }}>
-                  <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--accent-gold)', fontWeight: 700, letterSpacing: '0.06em', display: 'block' }}>💡 Tip de Estilo Sastrero</span>
-                  <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-primary)', marginTop: '0.15rem', lineHeight: '1.4' }}>{msg.advice.tip}</p>
+                {/* Tip Sastrero */}
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(193, 68, 14, 0.08)',
+                  borderLeft: '3px solid var(--accent-gold)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px'
+                }}>
+                  <Lightbulb size={15} color="var(--accent-gold)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Consejo de Sastre
+                    </span>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)', marginTop: '1px', lineHeight: '1.4' }}>
+                      {msg.advice.tip}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
           </div>
         ))}
 
+        {/* Indicador de escritura animado */}
         {isTyping && (
-          <div style={{ display: 'flex', gap: '0.35rem', alignSelf: 'flex-start' }}>
-            <div className="chat-bubble ai" style={{ padding: '0.6rem 1rem' }}>
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '14px' }}>
-                <motion.div animate={{ scale: [0.6, 1, 0.6] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--text-muted)' }} />
-                <motion.div animate={{ scale: [0.6, 1, 0.6] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--text-muted)' }} />
-                <motion.div animate={{ scale: [0.6, 1, 0.6] }} transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--text-muted)' }} />
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start', padding: '0.6rem 1rem', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid var(--border-medium)' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>El Sastre IA está confeccionando tu respuesta</span>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-gold)' }} />
+              <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-gold)' }} />
+              <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-gold)' }} />
             </div>
           </div>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Sugerencias Rápidas */}
-      <div style={{ display: 'flex', gap: '0.45rem', padding: '0.6rem 1rem', background: 'var(--bg-secondary)', overflowX: 'auto', borderTop: '1px solid var(--border-subtle)', flexWrap: 'nowrap', whiteSpace: 'nowrap' }} className="no-scrollbar">
-        {SUGGESTIONS.map((sug, idx) => (
+      {/* ── SUGERENCIAS RÁPIDAS EN CHIPS ── */}
+      <div style={{
+        padding: '0.75rem 1.4rem',
+        background: 'var(--bg-secondary)',
+        borderTop: '1px solid var(--border-subtle)',
+        display: 'flex',
+        gap: '0.5rem',
+        overflowX: 'auto',
+        alignItems: 'center'
+      }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', flexShrink: 0 }}>
+          Sugerencias:
+        </span>
+        {SUGGESTIONS.map((sug, i) => (
           <button
-            key={idx}
-            onClick={() => handleSend(sug.replace(/[🟢🔵⚫🤎]/g, '').trim())}
+            key={i}
+            onClick={() => handleSend(sug)}
             style={{
               padding: '5px 12px',
-              borderRadius: '20px',
+              borderRadius: '100px',
               background: 'var(--bg-card)',
-              border: '1.5px solid var(--border-medium)',
-              fontSize: '0.78rem',
-              fontWeight: 500,
+              border: '1px solid var(--border-medium)',
+              fontSize: '0.74rem',
+              color: 'var(--text-primary)',
               cursor: 'pointer',
-              color: 'var(--text-secondary)',
-              transition: 'all 150ms'
+              whiteSpace: 'nowrap',
+              transition: 'all 140ms var(--ease-out)'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent-gold)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-medium)';
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
+            className="clickable"
           >
             {sug}
           </button>
         ))}
       </div>
 
-      {/* Caja de entrada */}
-      <div className="chat-input-area">
+      {/* ── ENTRADA DE TEXTO CON BOTÓN ENVIAR ── */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSend(inputValue);
+        }}
+        style={{
+          padding: '1rem 1.4rem',
+          background: 'var(--bg-card)',
+          borderTop: '1px solid var(--border-subtle)',
+          display: 'flex',
+          gap: '0.8rem'
+        }}
+      >
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend(inputValue)}
-          placeholder="Ej: Tengo un pantalón verde oscuro para ir elegante..."
+          placeholder="Pregúntale al Sastre IA: ej. '¿Cómo combino un pantalón terracota?' o '¿Qué me favorece con 175cm?'..."
           className="field-input"
-          style={{ flex: 1, padding: '10px 14px' }}
+          style={{ flex: 1, padding: '11px 16px', borderRadius: '12px' }}
         />
         <button
-          onClick={() => handleSend(inputValue)}
+          type="submit"
           className="btn-primary"
-          style={{ padding: '10px 14px', borderRadius: '10px' }}
+          style={{ padding: '11px 20px', borderRadius: '12px', flexShrink: 0 }}
         >
           <Send size={15} />
+          <span>Preguntar</span>
         </button>
-      </div>
+      </form>
+
     </div>
   );
 }

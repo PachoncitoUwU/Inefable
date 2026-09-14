@@ -10,8 +10,7 @@ import {
   RotateCcw,
   Ruler,
   ArrowRight,
-  Check,
-  User
+  Check
 } from 'lucide-react';
 
 import { 
@@ -30,6 +29,7 @@ import {
 import { exportPatternToPdf } from './lib/pdf-generator';
 
 import ChromaticWheel from './components/chromatic-wheel';
+import PersonalColorimetry from './components/personal-colorimetry';
 import StyleAssistant from './components/style-assistant';
 import NpcVisualizer from './components/npc-visualizer';
 
@@ -108,9 +108,6 @@ function App() {
   const handleSilhouetteChange = (sil: SilhouetteType) => {
     setSelectedSilhouette(sil);
     setMeasurements(SILHOUETTES[sil].defaultMeasurements);
-    toast.success(`Silueta ${SILHOUETTES[sil].name} activada`, {
-      description: SILHOUETTES[sil].tagline
-    });
   };
 
   const handleMeasurementChange = (key: keyof PatternMeasurements, val: number) => {
@@ -137,8 +134,10 @@ function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
       <Toaster 
         richColors 
-        position="top-right" 
+        position="bottom-right" 
         theme="light"
+        duration={1600}
+        closeButton
         toastOptions={{
           style: {
             background: 'var(--bg-card)',
@@ -171,9 +170,9 @@ function App() {
               background: 'var(--accent-gold)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
-              boxShadow: '0 0 16px rgba(255, 90, 31, 0.4)'
+              boxShadow: '0 0 16px rgba(193, 68, 14, 0.35)'
             }}>
-              <Scissors size={20} color="#0C0D12" strokeWidth={2.5} />
+              <Scissors size={20} color="#F4EFE9" strokeWidth={2.5} />
             </div>
             <div>
               <h1 style={{
@@ -200,10 +199,10 @@ function App() {
           {/* NAV TABS con indicador deslizante */}
           <nav className="nav-pill" style={{ display: 'flex', gap: 0 }}>
             {([
-              { id: 'pattern', label: 'Moldes', icon: Layers },
+              { id: 'pattern', label: 'Moldes CAD', icon: Layers },
               { id: 'advisor', label: 'Fit & Proporciones', icon: Sparkles },
-              { id: 'color',   label: 'Paletas', icon: Palette },
-              { id: 'npc',     label: 'NPC 3D', icon: User }
+              { id: 'color',   label: 'Color & Paletas', icon: Palette },
+              { id: 'npc',     label: 'Silueta & Textil', icon: Scissors }
             ] as const).map((tab) => (
               <button
                 key={tab.id}
@@ -704,108 +703,107 @@ function App() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '2.8rem' }}
             >
               <div>
-                <span className="eyebrow">Asesor de Fit</span>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
-                  Proporciones &amp; volumen
+                <span className="eyebrow">Asesor de Fit & Sastrería</span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  Proporciones Corporales & Asistente IA
                 </h2>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-                  Ajuste de volúmenes y proporciones de sastrería para optimizar tu silueta visual.
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  Calibra tu silueta visual mediante reglas áureas de sastrería y consulta a nuestro asistente de estilo inteligente en tiempo real.
                 </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
-                {/* Entradas del usuario + Asistente de IA */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  <div className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.3rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <Sparkles size={18} color="var(--accent-gold)" />
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Parámetros Corporales</h3>
-                      </div>
-                    </div>
+              {/* APARTADO 1: PARÁMETROS CORPORALES & REGLAS DE VOLUMEN */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
+                
+                {/* Entradas del usuario */}
+                <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <Sparkles size={18} color="var(--accent-gold)" />
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Parámetros Corporales</h3>
+                  </div>
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                          <label className="field-label" style={{ marginBottom: 0 }}>Estatura</label>
-                          <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userHeight} cm</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="150"
-                        max="205"
-                        value={userHeight}
-                        onChange={(e) => setUserHeight(Number(e.target.value))}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                          <label className="field-label" style={{ marginBottom: 0 }}>Peso Aproximado</label>
-                          <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.88rem' }}>{userWeight} kg</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="45"
-                        max="125"
-                        value={userWeight}
-                        onChange={(e) => setUserWeight(Number(e.target.value))}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-
-                    <div>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.55rem', fontWeight: 500 }}>
-                        Preferencia de Holgura (Fit)
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                      <label className="field-label" style={{ marginBottom: 0 }}>Estatura</label>
+                      <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.95rem' }}>
+                        {userHeight} cm
                       </span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                        {(['oversize', 'relaxed', 'fitted'] as const).map((mode) => {
-                          const isChosen = fitPreference === mode;
-                          return (
-                            <motion.button
-                              key={mode}
-                              whileHover={{ scale: 1.03 }}
-                              whileTap={{ scale: 0.97 }}
-                              onClick={() => setFitPreference(mode)}
-                              style={{
-                                padding: '0.65rem 0.4rem',
-                                borderRadius: '12px',
-                                border: isChosen ? '2px solid var(--accent-gold)' : '1.5px solid var(--border-medium)',
-                                background: isChosen ? 'var(--accent-light)' : 'var(--bg-secondary)',
-                                color: isChosen ? 'var(--accent-gold)' : 'var(--text-secondary)',
-                                fontSize: '0.82rem',
-                                fontWeight: 700,
-                                textTransform: 'capitalize',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {mode}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
                     </div>
+                    <input
+                      type="range"
+                      min="150"
+                      max="205"
+                      value={userHeight}
+                      onChange={(e) => setUserHeight(Number(e.target.value))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
 
-                    {/* Resumen del Fit */}
-                    <div style={{ padding: '1.2rem', borderRadius: '14px', background: 'var(--accent-light)', border: '1px solid var(--border-accent)' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                        Fórmula de Estilo Recomendada:
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                      <label className="field-label" style={{ marginBottom: 0 }}>Peso Aproximado</label>
+                      <span style={{ fontWeight: 700, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)', fontSize: '0.95rem' }}>
+                        {userWeight} kg
                       </span>
-                      <p style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '0.3rem' }}>
-                        {userHeight >= 178 ? 'Pantalón Baggy Full-Break + Buzo Boxy Cropped' : 'Pantalón Tiro Alto No-Break + Prenda Superior Entallada'}
-                      </p>
+                    </div>
+                    <input
+                      type="range"
+                      min="45"
+                      max="125"
+                      value={userWeight}
+                      onChange={(e) => setUserWeight(Number(e.target.value))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.55rem', fontWeight: 500 }}>
+                      Preferencia de Holgura (Fit)
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                      {(['oversize', 'relaxed', 'fitted'] as const).map((mode) => {
+                        const isChosen = fitPreference === mode;
+                        return (
+                          <motion.button
+                            key={mode}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setFitPreference(mode)}
+                            style={{
+                              padding: '0.75rem 0.5rem',
+                              borderRadius: '12px',
+                              border: isChosen ? '2px solid var(--accent-gold)' : '1.5px solid var(--border-medium)',
+                              background: isChosen ? 'var(--accent-light)' : 'var(--bg-secondary)',
+                              color: isChosen ? 'var(--accent-gold)' : 'var(--text-secondary)',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              textTransform: 'capitalize',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {mode}
+                          </motion.button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Asistente Conversacional de Estilismo IA */}
-                  <StyleAssistant />
+                  {/* Resumen del Fit */}
+                  <div style={{ padding: '1.2rem', borderRadius: '14px', background: 'var(--accent-light)', border: '1px solid var(--border-accent)' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                      Fórmula de Estilo Recomendada:
+                    </span>
+                    <p style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '0.3rem' }}>
+                      {userHeight >= 178 ? 'Pantalón Baggy Full-Break + Buzo Boxy Cropped' : 'Pantalón Tiro Alto No-Break + Prenda Superior Entallada'}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Tarjetas de Recomendaciones con Animaciones de Entrada */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                   {proportionAdvice.map((rule, idx) => (
                     <motion.div
                       key={idx}
@@ -813,16 +811,16 @@ function App() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.08, duration: 0.28, ease: EASE_OUT }}
                       className="glass-panel"
-                      style={{ padding: '1.4rem' }}
+                      style={{ padding: '1.6rem' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.4rem' }}>
-                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-gold)', flexShrink: 0 }} />
-                        <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rule.ruleName}</h4>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', flexShrink: 0 }} />
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>{rule.ruleName}</h4>
                       </div>
-                      <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                      <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                         {rule.guideline}
                       </p>
-                      <div style={{ marginTop: '0.85rem', padding: '0.85rem', borderRadius: '10px', background: 'var(--accent-light)', borderLeft: '3px solid var(--accent-gold)' }}>
+                      <div style={{ marginTop: '0.85rem', padding: '0.85rem 1rem', borderRadius: '10px', background: 'var(--accent-light)', borderLeft: '3px solid var(--accent-gold)' }}>
                         <p style={{ fontSize: '0.84rem', color: 'var(--accent-gold)', fontWeight: 600 }}>
                           {'\u2192'} {rule.recommendation}
                         </p>
@@ -831,10 +829,30 @@ function App() {
                   ))}
                 </div>
               </div>
+
+              {/* APARTADO 2 DEDICADO: ASISTENTE SASTRERO CON IA */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <span className="eyebrow">Consultor de Imagen Virtual</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.55rem', fontWeight: 400, marginTop: '0.15rem' }}>
+                    Asistente Sastrero Inteligente (IA)
+                  </h3>
+                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    Tu consultor privado de alta sastrería. Pregúntale cómo combinar prendas, elegir calzado o sacarle el máximo partido a tu estatura.
+                  </p>
+                </div>
+
+                <StyleAssistant
+                  userHeight={userHeight}
+                  userWeight={userWeight}
+                  selectedSilhouette={selectedSilhouette}
+                />
+              </div>
+
             </motion.div>
           )}
 
-          {/* PESTAÑA 3: CÍRCULO CROMÁTICO */}
+          {/* PESTAÑA 3: COLOR & PALETAS (ORGANIZADO EN 3 APARTADOS CON ESPACIOS AMPLIOS) */}
           {activeTab === 'color' && (
             <motion.div
               key="color-tab"
@@ -842,145 +860,187 @@ function App() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}
             >
               <div>
-                <span className="eyebrow">Círculo Cromático</span>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
-                  Armonías de Vestuario
+                <span className="eyebrow">Laboratorio de Teoría del Color</span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  Colorimetría, Círculo Cromático & Paletas
                 </h2>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-                  Paletas calibradas con teoría del color. Combinaciones probadas para prendas superiores, inferiores y calzado.
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  Sistema integral de armonización cromática: análisis personal según tono de piel, rueda cromática interactiva de 360° y catálogo editorial.
                 </p>
               </div>
 
-              {/* Grid de Paletas y Círculo Cromático */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.8rem', alignItems: 'start' }}>
-                
-                {/* Paletas de Sastrería Pre-calibradas */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    <Palette size={18} color="var(--accent-gold)" />
-                    Paletas Editoriales Curadas
+              {/* ── APARTADO 1: COLORIMETRÍA PERSONAL SEGÚN TONO DE PIEL ── */}
+              <div className="glass-panel" style={{ padding: '2.4rem' }}>
+                <div style={{ marginBottom: '1.4rem' }}>
+                  <span className="eyebrow">1. Análisis Cutáneo</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.55rem', fontWeight: 400, marginTop: '0.15rem' }}>
+                    Colorimetría Personal
                   </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.9rem' }}>
-                    {OUTFIT_PALETTES.map((pal) => {
-                      const isSelected = selectedPalette.id === pal.id;
-                      return (
-                        <motion.div
-                          key={pal.id}
-                          whileHover={{ y: -2, transition: { duration: 0.18 } }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => setSelectedPalette(pal)}
-                          className="glass-panel"
-                          style={{
-                            padding: '1rem 1.3rem',
-                            cursor: 'pointer',
-                            border: isSelected ? '1.5px solid var(--accent-gold)' : '1px solid var(--border-subtle)',
-                            background: isSelected ? 'rgba(193, 68, 14, 0.05)' : 'var(--bg-card)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '1rem'
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <h4 style={{ fontSize: '0.94rem', fontWeight: 700, color: isSelected ? 'var(--accent-gold)' : 'var(--text-primary)' }}>
-                              {pal.name}
-                            </h4>
-                            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem', lineHeight: '1.3' }}>
-                              {pal.description}
-                            </p>
-                          </div>
-                          
-                          <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.top.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.bottom.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.footwear.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: pal.accessory.hex, border: '1px solid rgba(0,0,0,0.1)' }} />
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    Selecciona tu tono y subtono de piel para descubrir los colores estrella que realzan tu rostro y las prendas sugeridas para tu fisonomía.
+                  </p>
                 </div>
 
-                {/* Círculo Cromático Interactivo */}
-                <div className="glass-panel" style={{ padding: '0.5rem' }}>
-                  <ChromaticWheel onPaletteSelect={(pal) => setSelectedPalette(pal as any)} />
+                <PersonalColorimetry
+                  onApplyPalette={(pal) => {
+                    setSelectedPalette(pal as any);
+                  }}
+                />
+              </div>
+
+              {/* ── APARTADO 2: CÍRCULO CROMÁTICO INTERACTIVO & ARMONÍAS ── */}
+              <div className="glass-panel" style={{ padding: '2.4rem' }}>
+                <div style={{ marginBottom: '1.4rem', textAlign: 'center', maxWidth: '600px', margin: '0 auto 1.8rem auto' }}>
+                  <span className="eyebrow">2. Espectro Óptico Continuo</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.55rem', fontWeight: 400, marginTop: '0.15rem' }}>
+                    Círculo Cromático Interactivo
+                  </h3>
+                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: '1.5' }}>
+                    Mueve el mouse o pulsa sobre la rueda cromática para aislar cualquier tinte textil y descubrir de inmediato sus fórmulas monocromáticas, complementarias, análogas y triádicas.
+                  </p>
+                </div>
+
+                <div style={{ maxWidth: '850px', margin: '0 auto', width: '100%' }}>
+                  <ChromaticWheel onPaletteSelect={(pal) => {
+                    setSelectedPalette(pal as any);
+                  }} />
+                </div>
+              </div>
+
+              {/* ── APARTADO 3: PALETAS DE SASTRERÍA CURADAS & DESGLOSE DE PRENDAS ── */}
+              <div className="glass-panel" style={{ padding: '2.4rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                
+                <div>
+                  <span className="eyebrow">3. Catálogo de Moda</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.55rem', fontWeight: 400, marginTop: '0.15rem' }}>
+                    Paletas Editoriales Curadas &amp; Coordinación de Prendas
+                  </h3>
+                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    Combinaciones de sastrería pre-calibradas para eventos formales, estilo urbano y ocasiones de alta costura.
+                  </p>
+                </div>
+
+                {/* Grid espacioso de Paletas Curadas */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+                  {OUTFIT_PALETTES.map((pal) => {
+                    const isSelected = selectedPalette.id === pal.id;
+                    return (
+                      <motion.div
+                        key={pal.id}
+                        whileHover={{ y: -3, transition: { duration: 0.18 } }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setSelectedPalette(pal)}
+                        style={{
+                          padding: '1.3rem 1.5rem',
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          border: isSelected ? '2px solid var(--accent-gold)' : '1px solid var(--border-medium)',
+                          background: isSelected ? 'var(--bg-card-hover)' : 'var(--bg-secondary)',
+                          boxShadow: isSelected ? '0 0 0 3px var(--accent-light), 0 6px 20px rgba(193, 68, 14, 0.08)' : 'none',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.85rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: isSelected ? 'var(--accent-gold)' : 'var(--text-primary)' }}>
+                            {pal.name}
+                          </h4>
+                          <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: pal.top.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: pal.bottom.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: pal.footwear.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: pal.accessory.hex, border: '1px solid rgba(0,0,0,0.15)' }} />
+                          </div>
+                        </div>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                          {pal.description}
+                        </p>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Desglose de Prendas de la Paleta Activa */}
+                <div style={{
+                  padding: '1.6rem',
+                  borderRadius: '16px',
+                  background: 'var(--bg-card)',
+                  border: '1.5px solid var(--border-medium)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.3rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent-gold)', letterSpacing: '0.08em', fontWeight: 700 }}>
+                        Armonía Activa: {selectedPalette.harmonyType.toUpperCase()}
+                      </span>
+                      <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 700, marginTop: '0.15rem' }}>
+                        {selectedPalette.name}
+                      </h4>
+                    </div>
+
+                    <button
+                      onClick={() => toast.success('¡Paleta guardada en tu sesión!')}
+                      className="btn-secondary"
+                      style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+                    >
+                      <Check size={15} color="var(--accent-gold)" />
+                      Guardar Paleta
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    {[
+                      { label: 'Prenda Superior', item: selectedPalette.top },
+                      { label: 'Pantalón / Inferior', item: selectedPalette.bottom },
+                      { label: 'Calzado', item: selectedPalette.footwear },
+                      { label: 'Accesorio / Acento', item: selectedPalette.accessory }
+                    ].map((entry, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '1.1rem',
+                          borderRadius: '12px',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-subtle)'
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '42px',
+                            borderRadius: '8px',
+                            background: entry.item.hex,
+                            marginBottom: '0.75rem',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            boxShadow: `0 3px 12px ${entry.item.hex}33`
+                          }}
+                        />
+                        <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
+                          {entry.label}
+                        </span>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 700, marginTop: '0.1rem', color: 'var(--text-primary)' }}>
+                          {entry.item.name}
+                        </h5>
+                        <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: '1.35' }}>
+                          {entry.item.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
               </div>
 
-              {/* Desglose de la Paleta Seleccionada */}
-              <motion.div layout className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent-gold)', letterSpacing: '0.1em', fontWeight: 700 }}>
-                      Armonía: {selectedPalette.harmonyType}
-                    </span>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 800, marginTop: '0.2rem' }}>
-                      {selectedPalette.name}
-                    </h3>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => toast.success('¡Paleta guardada en tu sesión!')}
-                    className="glass-pill"
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem', fontSize: '0.82rem', color: 'var(--text-primary)', border: 'none' }}
-                  >
-                    <Check size={15} color="var(--accent-gold)" />
-                    Guardar Paleta
-                  </motion.button>
-                </div>
-
-                {/* Bloques de Prendas con Tarjetas Elevadas */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1.2rem' }}>
-                  {[
-                    { label: 'Prenda Superior', item: selectedPalette.top },
-                    { label: 'Pantalón / Inferior', item: selectedPalette.bottom },
-                    { label: 'Calzado', item: selectedPalette.footwear },
-                    { label: 'Accesorio / Acento', item: selectedPalette.accessory }
-                  ].map((entry, idx) => (
-                    <motion.div
-                      key={idx}
-                      whileHover={{ y: -3 }}
-                      style={{
-                        padding: '1.3rem',
-                        borderRadius: '16px',
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--border-subtle)'
-                      }}
-                    >
-                      <motion.div
-                        initial={false}
-                        animate={{ background: entry.item.hex }}
-                        transition={{ duration: 0.3 }}
-                        style={{
-                          width: '100%',
-                          height: '56px',
-                          borderRadius: '10px',
-                          marginBottom: '0.9rem',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          boxShadow: `0 4px 16px ${entry.item.hex}33`
-                        }}
-                      />
-                      <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        {entry.label}
-                      </span>
-                      <h4 style={{ fontSize: '0.98rem', fontWeight: 700, marginTop: '0.1rem' }}>{entry.item.name}</h4>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: '1.35' }}>
-                        {entry.item.description}
-                      </p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
             </motion.div>
           )}
 
-          {/* === TAB: NPC 3D === */}
+          {/* PESTAÑA 4: SILUETA & RECOMENDACIÓN ANTROPOMÉTRICA (SIN DIBUJO) */}
           {activeTab === 'npc' && (
             <motion.div
               key="npc-tab"
@@ -988,15 +1048,15 @@ function App() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '2.4rem' }}
             >
               <div>
-                <span className="eyebrow">Probador Virtual</span>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
-                  Probador Corpóreo 2.5D (NPC 3D)
+                <span className="eyebrow">Asesor Antropométrico de Sastrería</span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  Recomendador de Silueta según Peso &amp; Estatura
                 </h2>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-                  Visualiza las siluetas de patronaje adaptadas a tus proporciones en un maniquí virtual reactivo.
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  Calcula con precisión cuál corte de pantalón potencia tu estatura y complexión, con selección de color textil y composiciones de fibra.
                 </p>
               </div>
 
@@ -1004,7 +1064,7 @@ function App() {
                 userHeight={userHeight}
                 userWeight={userWeight}
                 selectedSilhouette={selectedSilhouette}
-                onSilhouetteChange={(sil) => handleSilhouetteChange(sil)}
+                onSilhouetteChange={(sil) => handleSilhouetteChange(sil as any)}
                 onHeightChange={(h) => setUserHeight(h)}
                 onWeightChange={(w) => setUserWeight(w)}
               />
