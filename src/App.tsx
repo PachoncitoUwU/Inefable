@@ -26,7 +26,7 @@ import {
   type OutfitPalette 
 } from './lib/color-theory';
 
-import { exportPatternToPdf } from './lib/pdf-generator';
+import { exportPatternToPdf, getPatternTilingSummary } from './lib/pdf-generator';
 
 import ChromaticWheel from './components/chromatic-wheel';
 import PersonalColorimetry from './components/personal-colorimetry';
@@ -101,9 +101,12 @@ function App() {
 
   const [selectedPalette, setSelectedPalette] = useState<OutfitPalette>(OUTFIT_PALETTES[0]);
 
+  const [showAssemblyMap, setShowAssemblyMap] = useState(false);
+
   const currentPreset = SILHOUETTES[selectedSilhouette];
   const patternData = calculatePantsPattern(measurements, selectedSilhouette);
   const proportionAdvice = getProportionAdvice(userHeight, fitPreference);
+  const tilingSummary = getPatternTilingSummary(measurements, selectedSilhouette);
 
   const handleSilhouetteChange = (sil: SilhouetteType) => {
     setSelectedSilhouette(sil);
@@ -120,11 +123,11 @@ function App() {
         setTimeout(() => {
           exportPatternToPdf(measurements, selectedSilhouette);
           resolve(true);
-        }, 400);
+        }, 500);
       }),
       {
-        loading: 'Compilando geometrías vectoriales a escala real...',
-        success: '¡Molde PDF descargado! Listo para imprimir en escala 100%.',
+        loading: 'Generando molde a escala real 1:1 en mosaico de hojas A4...',
+        success: '¡Molde PDF descargado! Imprime en escala 100%, une las hojas A4 y corta directamente en tela.',
         error: 'Error al generar el archivo PDF.'
       }
     );
@@ -154,16 +157,15 @@ function App() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: EASE_OUT }}
         className="app-header"
-        style={{ padding: '0.8rem 1.5rem' }}
       >
-        <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+        <div className="app-header-inner">
           
           {/* Logo + marca */}
           <motion.div 
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.97 }}
             transition={EASE_SPRING}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer', userSelect: 'none' }}
+            className="app-header-brand"
           >
             <div style={{
               width: '40px', height: '40px', borderRadius: '10px',
@@ -197,7 +199,7 @@ function App() {
           </motion.div>
 
           {/* NAV TABS con indicador deslizante */}
-          <nav className="nav-pill" style={{ display: 'flex', gap: 0 }}>
+          <nav className="nav-pill">
             {([
               { id: 'pattern', label: 'Moldes CAD', icon: Layers },
               { id: 'advisor', label: 'Fit & Proporciones', icon: Sparkles },
@@ -228,7 +230,7 @@ function App() {
       </motion.header>
 
       {/* === CONTENIDO PRINCIPAL === */}
-      <main style={{ flex: 1, maxWidth: '1300px', margin: '0 auto', padding: '2rem 1.5rem', width: '100%' }}>
+      <main className="app-main">
         <AnimatePresence mode="wait">
 
           
@@ -243,10 +245,10 @@ function App() {
               style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
             >
               {/* Encabezado de sección */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div className="section-header">
                 <div>
                   <span className="eyebrow">Generador de Moldes</span>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
+                  <h2 className="section-title">
                     Patronaje técnico de pantalón
                   </h2>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem', maxWidth: '480px' }}>
@@ -263,7 +265,7 @@ function App() {
                 variants={staggerContainer}
                 initial="hidden"
                 animate="visible"
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}
+                className="silhouette-grid"
               >
                 {(Object.keys(SILHOUETTES) as SilhouetteType[]).map((key) => {
                   const preset = SILHOUETTES[key];
@@ -307,7 +309,7 @@ function App() {
               </motion.div>
 
               {/* Editor + Canvas */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+              <div className="editor-canvas-grid">
 
                 {/* Panel de medidas */}
                 <motion.div layout className="glass-panel" style={{ padding: '1.6rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
@@ -365,21 +367,114 @@ function App() {
                     ))}
                   </div>
 
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.4rem',
+                    background: 'var(--bg-secondary)',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-subtle)',
+                    fontSize: '0.78rem',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>📐 Escala Real de Confección:</span>
+                      <span style={{ color: 'var(--accent-gold)', fontWeight: 700 }}>1:1 (100% Real)</span>
+                    </div>
+                    <span>
+                      Largo real: <strong>{measurements.legLength} cm</strong> · Dividido en cuadrícula de hojas A4 con cruces de registro para unir con cinta y cortar directamente en tela.
+                    </span>
+                  </div>
+
                   <motion.button
                     whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(193, 68, 14, 0.3)' }}
                     whileTap={{ scale: 0.97 }}
                     onClick={handleDownloadPdf}
                     className="btn-primary"
-                    style={{ justifyContent: 'center', padding: '13px', marginTop: '0.3rem', fontSize: '0.92rem' }}
+                    style={{ justifyContent: 'center', padding: '13px', marginTop: '0.2rem', fontSize: '0.92rem' }}
                   >
                     <Download size={17} />
-                    Descargar Molde PDF — Escala Real
+                    Descargar Molde PDF — Escala Real 1:1 ({tilingSummary.totalSheets} Hojas A4)
                   </motion.button>
+
+                  {/* Guía y desglose de hojas interactivo */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAssemblyMap(prev => !prev)}
+                    className="btn-secondary"
+                    style={{
+                      justifyContent: 'center',
+                      fontSize: '0.8rem',
+                      padding: '8px 12px',
+                      background: showAssemblyMap ? 'var(--bg-card-hover)' : 'transparent',
+                      border: '1px solid var(--border-medium)',
+                      color: 'var(--text-secondary)'
+                    }}
+                  >
+                    {showAssemblyMap ? 'Ocultar Guía de Hojas' : `🗺️ Ver Mapa y Nombres de Hojas (${tilingSummary.totalSheets} Hojas Necesarias)`}
+                  </button>
+
+                  {showAssemblyMap && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.65rem',
+                        background: 'var(--bg-card)',
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: '1px solid var(--border-medium)',
+                        fontSize: '0.78rem'
+                      }}
+                    >
+                      {/* Delantero */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '4px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-gold)' }}>PIEZA 1: DELANTERO ({tilingSummary.totalFrontSheets} Hojas)</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Corte en tela</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {tilingSummary.frontTiles.map(tile => (
+                          <div key={tile.sheetNumber} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 8px', borderRadius: '6px', background: 'var(--bg-secondary)' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Hoja {tile.sheetNumber}: {tile.title}</span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--accent-gold)', fontWeight: 700 }}>[F{tile.row + 1}-C{tile.col + 1}]</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Hoja de transición */}
+                      <div style={{ padding: '6px 8px', borderRadius: '6px', background: 'rgba(193, 68, 14, 0.08)', border: '1px dashed var(--accent-gold)', color: 'var(--accent-gold)', fontWeight: 600, fontSize: '0.72rem', textAlign: 'center' }}>
+                        ✂ Hoja Separadora: Viene el Tiro y Molde Trasero
+                      </div>
+
+                      {/* Trasero */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '4px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-gold)' }}>PIEZA 2: TRASERO ({tilingSummary.totalBackSheets} Hojas)</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Corte en tela</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {tilingSummary.backTiles.map(tile => (
+                          <div key={tile.sheetNumber} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 8px', borderRadius: '6px', background: 'var(--bg-secondary)' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Hoja {tile.sheetNumber}: {tile.title}</span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--accent-gold)', fontWeight: 700 }}>[{tile.code}]</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Hoja final de ensamble y resultado */}
+                      <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'rgba(16, 149, 106, 0.08)', border: '1px solid rgba(16, 149, 106, 0.3)', color: '#0f766e', fontWeight: 600, fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>✨</span>
+                        <span><strong>Última Hoja:</strong> Guía Maestra de Ensamble y Resultado del Pantalón (Parte 1, Parte 2 y Mapa de Costuras paso a paso para principiantes).</span>
+                      </div>
+                    </motion.div>
+                  )}
                 </motion.div>
 
                 {/* Canvas SVG del patrón con herramientas de inspección */}
                 <motion.div layout className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem' }}>
+                  <div className="cad-controls-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                       <Layers size={18} color="var(--accent-gold)" />
                       <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Plano Técnico — 19 Puntos</h3>
@@ -705,14 +800,16 @@ function App() {
               exit="exit"
               style={{ display: 'flex', flexDirection: 'column', gap: '2.8rem' }}
             >
-              <div>
-                <span className="eyebrow">Asesor de Fit & Sastrería</span>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
-                  Proporciones Corporales & Asistente IA
-                </h2>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-                  Calibra tu silueta visual mediante reglas áureas de sastrería y consulta a nuestro asistente de estilo inteligente en tiempo real.
-                </p>
+              <div className="section-header">
+                <div>
+                  <span className="eyebrow">Asesor de Fit & Sastrería</span>
+                  <h2 className="section-title">
+                    Proporciones Corporales & Asistente IA
+                  </h2>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                    Calibra tu silueta visual mediante reglas áureas de sastrería y consulta a nuestro asistente de estilo inteligente en tiempo real.
+                  </p>
+                </div>
               </div>
 
               {/* APARTADO 1: PARÁMETROS CORPORALES & REGLAS DE VOLUMEN */}
@@ -862,14 +959,16 @@ function App() {
               exit="exit"
               style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}
             >
-              <div>
-                <span className="eyebrow">Laboratorio de Teoría del Color</span>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
-                  Colorimetría, Círculo Cromático & Paletas
-                </h2>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-                  Sistema integral de armonización cromática: análisis personal según tono de piel, rueda cromática interactiva de 360° y catálogo editorial.
-                </p>
+              <div className="section-header">
+                <div>
+                  <span className="eyebrow">Laboratorio de Teoría del Color</span>
+                  <h2 className="section-title">
+                    Colorimetría, Círculo Cromático & Paletas
+                  </h2>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                    Sistema integral de armonización cromática: análisis personal según tono de piel, rueda cromática interactiva de 360° y catálogo editorial.
+                  </p>
+                </div>
               </div>
 
               {/* ── APARTADO 1: COLORIMETRÍA PERSONAL SEGÚN TONO DE PIEL ── */}
@@ -924,7 +1023,7 @@ function App() {
                 </div>
 
                 {/* Grid espacioso de Paletas Curadas */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
+                <div className="outfit-cards-grid">
                   {OUTFIT_PALETTES.map((pal) => {
                     const isSelected = selectedPalette.id === pal.id;
                     return (
@@ -1050,14 +1149,16 @@ function App() {
               exit="exit"
               style={{ display: 'flex', flexDirection: 'column', gap: '2.4rem' }}
             >
-              <div>
-                <span className="eyebrow">Asesor Antropométrico de Sastrería</span>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.1rem', fontWeight: 400, lineHeight: 1.05, marginTop: '0.25rem' }}>
-                  Recomendador de Silueta según Peso &amp; Estatura
-                </h2>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-                  Calcula con precisión cuál corte de pantalón potencia tu estatura y complexión, con selección de color textil y composiciones de fibra.
-                </p>
+              <div className="section-header">
+                <div>
+                  <span className="eyebrow">Asesor Antropométrico de Sastrería</span>
+                  <h2 className="section-title">
+                    Recomendador de Silueta según Peso &amp; Estatura
+                  </h2>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                    Calcula con precisión cuál corte de pantalón potencia tu estatura y complexión, con selección de color textil y composiciones de fibra.
+                  </p>
+                </div>
               </div>
 
               <NpcVisualizer

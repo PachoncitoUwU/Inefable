@@ -36,22 +36,29 @@ export function hslToHex(h: number, s: number, l: number): string {
 
 export function getHueName(h: number): string {
   if (h >= 345 || h < 15) return 'Rojo Carmesí';
-  if (h >= 15 && h < 45) return 'Terracota / Naranja';
-  if (h >= 45 && h < 75) return 'Ocre / Mostaza';
-  if (h >= 75 && h < 115) return 'Verde Lima / Oliva';
-  if (h >= 115 && h < 165) return 'Verde Esmeralda / Salvia';
-  if (h >= 165 && h < 195) return 'Turquesa / Aqua';
+  if (h >= 15 && h < 45) return 'Naranja / Terracota';
+  if (h >= 45 && h < 75) return 'Amarillo / Ocre';
+  if (h >= 75 && h < 105) return 'Verde Lima / Pistacho';
+  if (h >= 105 && h < 140) return 'Verde Esmeralda';
+  if (h >= 140 && h < 165) return 'Verde Menta / Jade';
+  if (h >= 165 && h < 195) return 'Aqua / Turquesa';
   if (h >= 195 && h < 225) return 'Azul Celeste / Cobalto';
-  if (h >= 225 && h < 255) return 'Azul Prusia / Marino';
+  if (h >= 225 && h < 255) return 'Azul Marino / Real';
   if (h >= 255 && h < 285) return 'Índigo / Violeta';
   if (h >= 285 && h < 315) return 'Púrpura / Malva';
-  return 'Magenta / Buganvilla';
+  return 'Rosa / Magenta';
 }
 
 export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps) {
   const wheelRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
   const [selectedHsl, setSelectedHsl] = useState<HslColor>({ h: 22, s: 78, l: 48 }); // Terracota cálido base
-  const [pointerPos, setPointerPos] = useState({ x: 190, y: 145 });
+
+  // Posición en porcentaje (50% es centro)
+  // Inicial para h=22, s=78:
+  // angleRad = 22 * PI / 180; radiusPercent = 0.78 * 48 = 37.44%
+  // x = 50 + 37.44 * sin(22°) = 64%; y = 50 - 37.44 * cos(22°) = 15.3%
+  const [pointerPos, setPointerPos] = useState({ x: 64, y: 15.3 });
   const [activeHarmonyTab, setActiveHarmonyTab] = useState<'monochromatic' | 'complementary' | 'analogous' | 'triadic'>('monochromatic');
   const [appliedFeedback, setAppliedFeedback] = useState<string | null>(null);
 
@@ -63,7 +70,14 @@ export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps)
     const x = clientX - rect.left - centerX;
     const y = clientY - rect.top - centerY;
 
-    let angleRad = Math.atan2(y, x);
+    // En CSS conic-gradient(from 0deg, ...):
+    // 0deg está en las 12 (Arriba: x=0, y<0) y gira en sentido horario.
+    // Con Math.atan2(x, -y):
+    // Arriba (0, -R): Math.atan2(0, R) = 0° (Rojo Carmesí)
+    // Derecha (R, 0): Math.atan2(R, 0) = 90° (Lima / Amarillo-Verde)
+    // Abajo (0, R): Math.atan2(0, -R) = 180° (Aqua / Turquesa)
+    // Izquierda (-R, 0): Math.atan2(-R, 0) = 270° (Índigo / Violeta)
+    let angleRad = Math.atan2(x, -y);
     let angleDeg = angleRad * (180 / Math.PI);
     if (angleDeg < 0) angleDeg += 360;
 
@@ -79,32 +93,35 @@ export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps)
 
     setSelectedHsl(newHsl);
 
-    // Ajustar posición visual del puntero
-    const clampedDistance = Math.min(maxRadius - 4, Math.max(0, distance));
-    const pointerX = centerX + clampedDistance * Math.cos(angleRad);
-    const pointerY = centerY + clampedDistance * Math.sin(angleRad);
+    // Ajustar posición visual del puntero como porcentaje del contenedor para ser 100% responsivo
+    const clampedRatio = Math.min(0.96, Math.max(0, distance / maxRadius));
+    const percentRadius = clampedRatio * 48; // max 48% para no salirse del borde circular
+    const pointerX = 50 + percentRadius * Math.sin(angleRad);
+    const pointerY = 50 - percentRadius * Math.cos(angleRad);
     setPointerPos({ x: pointerX, y: pointerY });
   }, []);
 
-  const handlePointerInteraction = (e: React.MouseEvent | React.TouchEvent) => {
-    let clientX: number, clientY: number;
-    if ('touches' in e && e.touches[0]) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else if ('clientX' in e) {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    } else {
-      return;
-    }
-    calculateColorFromCoords(clientX, clientY);
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = true;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    calculateColorFromCoords(e.clientX, e.clientY);
   };
 
-  const handleMouseMoveOrHover = (e: React.MouseEvent) => {
-    // Permite interacción tanto al arrastrar como al mover el mouse
-    if (e.buttons === 1 || e.type === 'click') {
-      handlePointerInteraction(e);
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingRef.current) {
+      calculateColorFromCoords(e.clientX, e.clientY);
     }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = false;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {}
   };
 
   const { h, s } = selectedHsl;
@@ -277,19 +294,20 @@ export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps)
         <div
           ref={wheelRef}
           className="chromatic-wheel-container"
-          onClick={handlePointerInteraction}
-          onMouseMove={handleMouseMoveOrHover}
-          onTouchStart={handlePointerInteraction}
-          onTouchMove={handlePointerInteraction}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onClick={(e) => calculateColorFromCoords(e.clientX, e.clientY)}
         >
           <div className="chromatic-wheel-surface" />
           
-          {/* Puntero reactivo */}
+          {/* Puntero reactivo centrado con porcentajes */}
           <div
             className="chromatic-pointer"
             style={{
-              left: `${pointerPos.x}px`,
-              top: `${pointerPos.y}px`,
+              left: `${pointerPos.x}%`,
+              top: `${pointerPos.y}%`,
               backgroundColor: hexSelected
             }}
           />
@@ -326,14 +344,7 @@ export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps)
 
       {/* Selector de tipo de armonía */}
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-        <div style={{
-          display: 'flex',
-          gap: '0.35rem',
-          background: 'var(--bg-secondary)',
-          padding: '4px',
-          borderRadius: '12px',
-          border: '1px solid var(--border-subtle)'
-        }}>
+        <div className="harmony-tabs-list">
           {[
             { id: 'monochromatic', label: 'Monocromático' },
             { id: 'complementary', label: 'Complementario' },
@@ -373,8 +384,8 @@ export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps)
             className="glass-panel"
             style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.8rem' }}>
-              <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.8rem', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 200px' }}>
                 <h4 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   {currentActivePalette.name}
                 </h4>
@@ -401,7 +412,7 @@ export default function ChromaticWheel({ onPaletteSelect }: ChromaticWheelProps)
             </div>
 
             {/* Muestras de prendas en la armonía */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.6rem' }}>
+            <div className="harmony-outfit-grid">
               {[
                 { label: 'Superior / Top', item: currentActivePalette.top },
                 { label: 'Pantalón / Bottom', item: currentActivePalette.bottom },

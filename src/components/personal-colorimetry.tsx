@@ -177,12 +177,7 @@ export default function PersonalColorimetry({ onApplyPalette }: PersonalColorime
           Selecciona tu Tono de Piel y Subtono
         </label>
         
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-          gap: '0.7rem',
-          marginTop: '0.4rem'
-        }}>
+        <div className="skin-tones-grid">
           {SKIN_PROFILES.map((profile) => {
             const isSelected = selectedProfile.id === profile.id;
             return (
